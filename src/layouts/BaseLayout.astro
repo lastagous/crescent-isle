@@ -91,13 +91,27 @@ const canonical = new URL(Astro.url.pathname, siteUrl).href;
 </html>
 
 <style is:global>
-  /* Tailwind の box-sizing: border-box とツールチップの競合を回避 */
+  /* Tailwind のリセットとツールチップの競合を回避 */
   #eorzeadb_tooltip {
     overflow: visible !important;
-    box-sizing: content-box !important;
   }
-  #eorzeadb_tooltip div {
-    box-sizing: content-box !important;
+  /* Tailwind preflight: img { display:block; max-width:100% } を打ち消す */
+  #eorzeadb_tooltip img {
+    display: inline !important;
+    max-width: none !important;
+  }
+  /* Tailwind preflight: table { border-collapse:collapse } を打ち消す */
+  #eorzeadb_tooltip table {
+    border-collapse: separate !important;
+    width: auto !important;
+  }
+  /* 10px になっている種別ラベルを読みやすいサイズに */
+  #eorzeadb_tooltip .db-table__txt--type {
+    font-size: 12px !important;
+  }
+  /* NPC コンテンツをグリッド表示 */
+  #eorzeadb_tooltip .db-table__wrapper--npc_content {
+    display: grid !important;
   }
   /* eorzeadb_link のスタイル */
   a.eorzeadb_link {
