@@ -4,11 +4,9 @@ import tailwind from '@astrojs/tailwind';
 
 // GitHub Pages では リポジトリ名をベースパスに設定
 // 例: https://username.github.io/crescent-isle-guide/
-const BASE = process.env.CI ? '/crescent-isle' : '';
-
 export default defineConfig({
-  site: 'https://lastagous.github.io',
-  base: BASE,
+  site: 'https://lastagous.com',
+  base: '',
   output: 'static',
   integrations: [
     svelte(),
