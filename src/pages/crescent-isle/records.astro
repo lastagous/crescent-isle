@@ -1,0 +1,367 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MapViewer from '../../components/ui/MapViewer.svelte';
+import TableOfContents from '../../components/ui/TableOfContents.svelte';
+import { itemIconUrl } from '../../data/items';
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+// ─── マップ用座標変換 (ゲーム座標 → SVG 800px) ──────────────────────────────
+const g2p = (v: number) => (v - 1) / 41 * 800;
+
+const fieldMapMarkers = [
+  // ── エーテライト ──
+  { id: 'a1', type: 'aetheryte' as const, label: '探査隊のベースキャンプ', x: g2p(38.1), y: g2p(7.5)  },
+  { id: 'a2', type: 'aetheryte' as const, label: 'さすらい人の安息地',     x: g2p(18.0), y: g2p(9.2)  },
+  { id: 'a3', type: 'aetheryte' as const, label: '水晶の洞窟',             x: g2p(14.3), y: g2p(19.0) },
+  { id: 'a4', type: 'aetheryte' as const, label: '石の沼地',               x: g2p(13.7), y: g2p(27.0) },
+  { id: 'a5', type: 'aetheryte' as const, label: '古老の森',               x: g2p(27.5), y: g2p(27.5) },
+  // ── 探査記録 ──
+  { id: 'r06', type: 'record' as const, label: 'No.06 サポートジョブ',   x: g2p(31.3), y: g2p(17.0) },
+  { id: 'r07', type: 'record' as const, label: 'No.07 円蓋の城塞',       x: g2p(31.3), y: g2p(17.0) },
+  { id: 'r08', type: 'record' as const, label: 'No.08 コイントートス',   x: g2p(20.2), y: g2p(12.3) },
+  { id: 'r09', type: 'record' as const, label: 'No.09 蜃気楼の浜',       x: g2p(20.3), y: g2p(12.3) },
+  { id: 'r12', type: 'record' as const, label: 'No.12 南部丘陵',         x: g2p(23.2), y: g2p(21.5) },
+  { id: 'r13', type: 'record' as const, label: 'No.13 岩窟の裏町',       x: g2p(10.7), y: g2p(22.4) },
+  { id: 'r15', type: 'record' as const, label: 'No.15 禁忌の廃都',       x: g2p(24.4), y: g2p(32.9) },
+  { id: 'r18', type: 'record' as const, label: 'No.18 古樹の湿原',       x: g2p(18.5), y: g2p(33.8) },
+  { id: 'r19', type: 'record' as const, label: 'No.19 階段の殿堂',       x: g2p(15.6), y: g2p(29.5) },
+  { id: 'r21', type: 'record' as const, label: 'No.21 高層住宅跡',       x: g2p(36.6), y: g2p(33.8) },
+  { id: 'r22', type: 'record' as const, label: 'No.22 石兵工房跡',       x: g2p(3.6),  y: g2p(5.5)  },
+  { id: 'r23', type: 'record' as const, label: 'No.23 放浪神聖域跡',     x: g2p(35.8), y: g2p(22.7) },
+  { id: 'r24', type: 'record' as const, label: 'No.24 大聖火台跡',       x: g2p(8.7),  y: g2p(35.8) },
+];
+
+// ─── 探査記録帳 全30種 ──────────────────────────────────────────────────────────
+// データ出典:
+//   SaintCoinach rawexd/MKDLore.csv (アイコン・英語説明)
+//   https://eomania.com/2025/05/31/crescent-isle-record-guide/
+//   https://itumononeko.com/ff14-00561/
+//   https://na.finalfantasyxiv.com/lodestone/character/4806076/blog/5574048/
+
+type HowType = 'story' | 'field' | 'ce' | 'fate' | 'tower';
+
+type Record = {
+  no: number;
+  name: string;
+  icon: string;   // 070601〜070630
+  how: HowType;
+  coord?: string;
+  source?: string; // CE/FATE名 or クエスト名
+  note?: string;
+};
+
+const icon = (n: string) => `${BASE}/icons/records/${n}.png`;
+
+const records: Record[] = [
+  // ──────────────────── ストーリー進行 ────────────────────────────────────────
+  { no:  1, name: 'ケテンラム',           icon: icon('070615'), how: 'story',  source: 'クエスト「ケテンラム、最後の冒険」' },
+  { no:  2, name: '蜃気楼の町',           icon: icon('070601'), how: 'story',  source: 'クエスト「無人の町」' },
+  { no:  3, name: 'アーカイブ',           icon: icon('070616'), how: 'story',  source: 'クエスト「使えない使い魔」' },
+  { no:  4, name: 'アイリス',             icon: icon('070617'), how: 'story',  source: 'クエスト「使えない使い魔」' },
+  { no:  5, name: '探査隊のベースキャンプ', icon: icon('070602'), how: 'story', source: 'ベースキャンプ到着時' },
+  { no: 25, name: '島の主',              icon: icon('070618'), how: 'story',  source: 'メインクエスト後半' },
+
+  // ──────────────────── フィールド探索 ────────────────────────────────────────
+  { no:  6, name: 'サポートジョブ',        icon: icon('070630'), how: 'field', coord: 'X:31.3 Y:17.0', note: '円蓋の城塞近くの輝点' },
+  { no:  7, name: '円蓋の城塞',           icon: icon('070603'), how: 'field', coord: 'X:31.3 Y:17.0', note: 'クエスト「島内に佇む古城」後' },
+  { no:  8, name: 'コイントートス',        icon: icon('070624'), how: 'field', coord: 'X:20.2 Y:12.3' },
+  { no:  9, name: '蜃気楼の浜',           icon: icon('070604'), how: 'field', coord: 'X:20.3 Y:12.3', note: 'クエスト「見えない共通項」後' },
+  { no: 12, name: '南部丘陵',            icon: icon('070608'), how: 'field', coord: 'X:23.2 Y:21.5' },
+  { no: 13, name: '岩窟の裏町',           icon: icon('070605'), how: 'field', coord: 'X:10.7 Y:22.4', note: 'クエスト進行後アクセス可' },
+  { no: 15, name: '禁忌の廃都',           icon: icon('070606'), how: 'field', coord: 'X:24.4 Y:32.9' },
+  { no: 18, name: '古樹の湿原',           icon: icon('070609'), how: 'field', coord: 'X:18.5 Y:33.8' },
+  { no: 19, name: '階段の殿堂',           icon: icon('070607'), how: 'field', coord: 'X:15.6 Y:29.5' },
+  { no: 21, name: '高層住宅跡',           icon: icon('070612'), how: 'field', coord: 'X:36.6 Y:33.8' },
+  { no: 22, name: '石兵工房跡',           icon: icon('070613'), how: 'field', coord: 'X:3.6 Y:5.5',   note: '周辺に強敵多数' },
+  { no: 23, name: '放浪神聖域跡',         icon: icon('070611'), how: 'field', coord: 'X:35.8 Y:22.7' },
+  { no: 24, name: '大聖火台跡',           icon: icon('070610'), how: 'field', coord: 'X:8.7 Y:35.8' },
+
+  // ──────────────────── CE・FATE ──────────────────────────────────────────────
+  { no: 10, name: 'ニーム・ペタロドゥス',   icon: icon('070623'), how: 'ce',   source: 'CE「二足の獅子ランパントライオン」低確率' },
+  { no: 11, name: 'おねだりポット',        icon: icon('070625'), how: 'fate', source: 'FATE「おねだりポット」' },
+  { no: 14, name: 'ミシカルアイドル',      icon: icon('070622'), how: 'ce',   source: 'CE「神秘の偶像ミシカルアイドル」低確率' },
+  { no: 16, name: '黒チョコボ',           icon: icon('070619'), how: 'ce',   source: 'CE「黒の連隊」低確率' },
+  { no: 17, name: 'クレセント・バーサーカー', icon: icon('070620'), how: 'ce', source: 'CE「怒れる人造人間クレセント・バーサーカー」低確率' },
+  { no: 20, name: 'クロイスターデーモン',   icon: icon('070621'), how: 'ce',   source: 'CE「封印大妖クロイスターデーモン」低確率' },
+
+  // ──────────────────── フォークタワー ────────────────────────────────────────
+  { no: 26, name: 'デーモンタブレット',     icon: icon('070626'), how: 'tower', source: '第1ボス撃破後の宝箱' },
+  { no: 27, name: 'デッドスターズ',        icon: icon('070627'), how: 'tower', source: '第2〜3ボス撃破後の宝箱' },
+  { no: 28, name: 'マーブルドラゴン',       icon: icon('070628'), how: 'tower', source: '第4ボス撃破後の宝箱' },
+  { no: 29, name: 'マジタウロス',          icon: icon('070629'), how: 'tower', source: '最終ボス撃破後の宝箱' },
+  { no: 30, name: '秘密の書庫',           icon: icon('070614'), how: 'tower', source: '最終ボス討伐後・最奥の部屋で調査' },
+];
+
+const byHow = (how: HowType) => records.filter(r => r.how === how).sort((a, b) => a.no - b.no);
+
+const howMeta: Record<HowType, { label: string; badge: string; badgeClass: string; desc: string }> = {
+  story: {
+    label:      'ストーリー進行',
+    badge:      'Story',
+    badgeClass: 'badge-gold',
+    desc:       'メインクエストの進行中に自動入手。意識しなくても必ず取得できます。',
+  },
+  field: {
+    label:      'フィールド探索',
+    badge:      'Field',
+    badgeClass: 'badge-teal',
+    desc:       '指定の座標付近に現れる光る調査ポイントを調べて入手。一部はクエスト進行後に出現します。',
+  },
+  ce: {
+    label:      'クリティカルエンカウント',
+    badge:      'CE',
+    badgeClass: 'badge-crimson',
+    desc:       '対応するCEクリア時に低確率でドロップ。周回が必要になる場合があります。',
+  },
+  fate: {
+    label:      'FATE',
+    badge:      'FATE',
+    badgeClass: 'badge-gold',
+    desc:       '対応するFATEクリア時にドロップ。FATEは定期発生なので比較的入手しやすいです。',
+  },
+  tower: {
+    label:      'フォークタワー（力の塔）',
+    badge:      'Tower',
+    badgeClass: 'badge-moon',
+    desc:       '力の塔の各ボス撃破後に確率ドロップ（宝箱から）。No.30のみ最奥の部屋の調査ポイントで入手。',
+  },
+};
+
+const storyRecords  = byHow('story');
+const fieldRecords  = byHow('field');
+const ceRecords     = byHow('ce');
+const fateRecords   = byHow('fate');
+const towerRecords  = byHow('tower');
+
+const tocItems = [
+  { id: 'sec-overview', label: '概要' },
+  { id: 'sec-story',    label: 'ストーリー進行' },
+  { id: 'sec-field',    label: 'フィールド探索' },
+  { id: 'sec-ce',       label: 'CE' },
+  { id: 'sec-fate',     label: 'FATE' },
+  { id: 'sec-tower',    label: '力の塔' },
+  { id: 'sec-complete', label: 'コンプリート報酬' },
+];
+---
+
+<BaseLayout
+  title="探査記録帳 | クレセントアイル | FF14"
+  description="FF14 クレセントアイル（パッチ 7.25）の三日月島探査記録帳 全30種一覧。ストーリー・フィールド・CE・FATE・力の塔ごとの入手方法と座標をまとめています。"
+>
+  <!-- Hero -->
+  <div class="page-hero">
+    <div class="container mx-auto px-4 pt-16 pb-8 relative z-10">
+      <h1 class="font-display text-4xl md:text-5xl text-moon-light">探査記録帳</h1>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-12 max-w-6xl">
+    <div class="flex gap-8 items-stretch">
+    <div class="flex-1 min-w-0">
+
+    <!-- ━━━ ストーリー進行 ━━━ -->
+    <section id="sec-story" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        {howMeta.story.label}
+      </h2>
+      <p class="text-slate text-xs mb-4">{howMeta.story.desc}</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        {storyRecords.map(r => (
+          <div class="section-card record-card">
+            <img src={r.icon} alt={r.name} class="record-img" />
+            <div class="record-body">
+              <div class="record-no">No.{String(r.no).padStart(2,'0')}</div>
+              <div class="record-name">{r.name}</div>
+              {r.source && <div class="record-source">{r.source}</div>}
+              {r.note && <div class="record-note">{r.note}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="./story" class="text-xs text-teal/80 hover:text-teal transition-colors">ストーリー攻略を見る →</a>
+      </div>
+    </section>
+
+    <!-- ━━━ フィールド探索 ━━━ -->
+    <section id="sec-field" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        {howMeta.field.label}
+      </h2>
+      <p class="text-slate text-xs mb-4">{howMeta.field.desc}</p>
+      <div class="flex flex-col lg:flex-row gap-4 items-start">
+        <div class="section-card p-0 overflow-hidden lg:flex-1 w-full">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="w-12">No.</th>
+                <th class="w-20">アイコン</th>
+                <th>名称</th>
+                <th>座標</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fieldRecords.map(r => (
+                <tr>
+                  <td class="font-mono text-teal text-xs text-center">{String(r.no).padStart(2,'0')}</td>
+                  <td class="text-center">
+                    <img src={r.icon} alt={r.name} class="inline-block h-10 w-auto object-contain rounded" />
+                  </td>
+                  <td class="text-moon font-medium text-sm">{r.name}</td>
+                  <td class="font-mono text-teal text-xs whitespace-nowrap">{r.coord}</td>
+                  <td class="text-slate text-xs">{r.note ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div class="w-full lg:w-[420px] lg:flex-shrink-0 lg:sticky lg:top-[84px]">
+          <MapViewer
+            client:visible
+            markers={fieldMapMarkers}
+            mapSrc="/crescent-isle/maps/o6b1_01.png"
+            mapWidth={800}
+            mapHeight={800}
+            mapMaxHeight="420px"
+            showPanel={false}
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- ━━━ CE ━━━ -->
+    <section id="sec-ce" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        {howMeta.ce.label}
+      </h2>
+      <p class="text-slate text-xs mb-4">{howMeta.ce.desc}</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        {ceRecords.map(r => (
+          <div class="section-card record-card border-crimson/20">
+            <img src={r.icon} alt={r.name} class="record-img" />
+            <div class="record-body">
+              <div class="record-no">No.{String(r.no).padStart(2,'0')}</div>
+              <div class="record-name">{r.name}</div>
+              {r.source && <div class="record-source text-crimson/80">{r.source}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="./fate" class="text-xs text-teal/80 hover:text-teal transition-colors">FATE・CE 攻略一覧を見る →</a>
+      </div>
+    </section>
+
+    <!-- ━━━ FATE ━━━ -->
+    <section id="sec-fate" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        {howMeta.fate.label}
+      </h2>
+      <p class="text-slate text-xs mb-4">{howMeta.fate.desc}</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        {fateRecords.map(r => (
+          <div class="section-card record-card border-gold/20">
+            <img src={r.icon} alt={r.name} class="record-img" />
+            <div class="record-body">
+              <div class="record-no">No.{String(r.no).padStart(2,'0')}</div>
+              <div class="record-name">{r.name}</div>
+              {r.source && <div class="record-source text-gold/80">{r.source}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="./fate" class="text-xs text-teal/80 hover:text-teal transition-colors">FATE・CE 攻略一覧を見る →</a>
+      </div>
+    </section>
+
+    <!-- ━━━ フォークタワー ━━━ -->
+    <section id="sec-tower" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        {howMeta.tower.label}
+      </h2>
+      <p class="text-slate text-xs mb-4">{howMeta.tower.desc}</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        {towerRecords.map(r => (
+          <div class="section-card record-card border-moon/10">
+            <img src={r.icon} alt={r.name} class="record-img" />
+            <div class="record-body">
+              <div class="record-no">No.{String(r.no).padStart(2,'0')}</div>
+              <div class="record-name">{r.name}</div>
+              {r.source && <div class="record-source">{r.source}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="./tower" class="text-xs text-teal/80 hover:text-teal transition-colors">フォークタワー：力の塔を見る →</a>
+      </div>
+    </section>
+
+    <!-- ━━━ コンプリート報酬 ━━━ -->
+    <section id="sec-complete" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        コンプリート報酬
+      </h2>
+      <div class="section-card border-gold/20">
+        <div class="flex items-start gap-3">
+          <span class="material-icons text-gold" style="font-size:1.25rem;margin-top:0.1rem">emoji_events</span>
+          <div class="text-sm text-slate leading-relaxed">
+            <p class="mb-2">
+              全30種を集めると
+              <span class="text-gold font-semibold">アチーブメント</span>および
+              <span class="text-gold font-semibold">称号</span>を獲得できます。
+            </p>
+            <p class="text-xs text-slate/60">
+              ※ 記録の収集そのものに報酬はなく、探査記録帳の全コンプリートがアチーブメントの達成条件になります。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /flex-1 -->
+
+  <aside class="hidden xl:block w-52 flex-shrink-0">
+    <TableOfContents client:visible items={tocItems} />
+  </aside>
+</div><!-- /flex -->
+</BaseLayout>
+
+<style>
+  .badge-moon {
+    @apply inline-flex items-center rounded px-1.5 py-0.5 font-semibold text-moon-light bg-moon/10 border border-moon/25;
+  }
+  .record-card {
+    @apply flex gap-3 items-start p-3 border border-night-300/40 hover:border-teal/20 transition-colors;
+  }
+  .record-img {
+    flex-shrink: 0;
+    width: 72px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    background: rgba(255,255,255,0.03);
+  }
+  .record-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .record-no {
+    @apply font-mono text-teal text-xs mb-0.5;
+  }
+  .record-name {
+    @apply text-moon font-semibold text-sm leading-tight mb-1;
+  }
+  .record-source {
+    @apply text-slate text-xs leading-snug;
+  }
+  .record-note {
+    @apply text-gold/70 text-xs mt-1;
+  }
+  .btn-outline {
+    @apply inline-flex items-center rounded border border-night-300/60 text-slate hover:border-teal/40 hover:text-teal transition-colors;
+  }
+</style>

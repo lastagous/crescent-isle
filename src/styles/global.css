@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base ───────────────────────────────────────────── */
+@layer base {
+  :root {
+    --color-bg:      #0a0f1e;
+    --color-surface: #111828;
+    --color-border:  #1e3050;
+    --color-text:    #c8d8f0;
+    --color-muted:   #6b8aad;
+    --color-accent:  #2dd4bf;
+    --color-gold:    #fbbf24;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply bg-night text-moon font-body antialiased;
+    background-image:
+      radial-gradient(ellipse 60% 30% at 70% 10%, rgba(45,212,191,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 80% 40% at 20% 80%, rgba(251,191,36,0.03) 0%, transparent 60%);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4 { @apply font-display; }
+
+  a { @apply text-teal transition-colors duration-200; }
+  a:hover { @apply text-teal-glow; }
+
+  ::selection { @apply bg-teal/30 text-moon-light; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-night-200; }
+  ::-webkit-scrollbar-thumb { @apply bg-teal/40 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-teal/70; }
+}
+
+/* ── Components ─────────────────────────────────────── */
+@layer components {
+  .section-card {
+    @apply bg-night-200 border border-[var(--color-border)] rounded-xl p-6
+           shadow-moon-glow backdrop-blur-sm;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono
+           font-medium border;
+  }
+
+  .badge-teal   { @apply badge bg-teal/10 text-teal border-teal/30; }
+  .badge-gold   { @apply badge bg-gold/10 text-gold border-gold/30; }
+  .badge-red    { @apply badge bg-crimson/10 text-crimson border-crimson/30; }
+  .badge-slate  { @apply badge bg-slate/10 text-slate-light border-slate/30; }
+
+  .btn {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium
+           transition-all duration-200 active:scale-95;
+  }
+
+  .btn-teal {
+    @apply btn bg-teal text-night font-semibold
+           hover:bg-teal-glow shadow-teal-glow hover:shadow-lg;
+  }
+
+  .btn-ghost {
+    @apply btn border border-[var(--color-border)] text-moon
+           hover:bg-night-200 hover:border-teal/40;
+  }
+
+  .divider {
+    @apply border-t border-[var(--color-border)] my-6;
+  }
+
+  .page-hero {
+    @apply relative text-center py-20 overflow-hidden;
+  }
+
+  .page-hero::before {
+    content: '';
+    @apply absolute inset-0 bg-moonlight;
+  }
+
+  .data-table {
+    @apply w-full text-sm border-collapse;
+  }
+  .data-table th {
+    @apply text-left py-3 px-4 text-moon-dim font-medium uppercase tracking-wider
+           text-xs border-b border-[var(--color-border)];
+  }
+  .data-table td {
+    @apply py-3 px-4 border-b border-night-300/50;
+  }
+  .data-table tr:hover td { @apply bg-night-300/30; }
+}

@@ -1,0 +1,567 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import GearFilter from '../../components/ui/GearFilter.svelte';
+
+// ─── データ出典 ─────────────────────────────────────────────────────────────
+// game8.jp/ff14/694939  クレセントアイル装備の入手方法と強化方法
+// game8.jp/ff14/750541  クレセントアイルのレアアクセサリーの入手方法と性能
+// ff14-fc.com/equipment/ ミラプリライフ 各部位ページ
+// jp.finalfantasyxiv.com/lodestone/playguide/db/ エオルゼアデータベース
+
+// ─── ジョブグループ ─────────────────────────────────────────────────────────
+type JobGroup = 'tank' | 'healer' | 'melee' | 'ranged' | 'caster';
+
+const JOB_GROUPS: Record<JobGroup, string[]> = {
+  tank:   ['ナイト', '戦士', '暗黒騎士', 'ガンブレイカー'],
+  healer: ['白魔道士', '学者', '占星術師', '賢者'],
+  melee:  ['モンク', '竜騎士', '忍者', '侍', 'リーパー', 'ヴァイパー'],
+  ranged: ['吟遊詩人', '機工士', '踊り子'],
+  caster: ['黒魔道士', '召喚士', '赤魔道士', 'ピクトマンサー', '青魔道士'],
+};
+
+type GearPiece = {
+  slot: string;
+  name: string;
+  ldsId: string | null;
+  icon: number;
+  mainStat1Val: number;
+  mainStat2Val: number;
+  subStat1: string;
+  subStat1Val: number;
+  subStat2: string;
+  subStat2Val: number;
+};
+type GearSet = {
+  id: string;
+  typeName: string;
+  roleLabel: string;
+  color: string;
+  jobs: string[];
+  mainStat: string;
+  pieces: GearPiece[];
+};
+
+const BASE_URL = 'https://jp.finalfantasyxiv.com/lodestone/playguide/db/item/';
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+const gearIconUrl = (icon: number) => `${BASE}/icons/gear/${String(icon).padStart(6, '0')}.png`;
+const jobIconUrl  = (icon: number) => `${BASE}/icons/jobs/${String(icon).padStart(6, '0')}.png`;
+
+const JOB_ICONS: Record<string, number> = {
+  'ナイト': 62119, '戦士': 62121, '暗黒騎士': 62132, 'ガンブレイカー': 62137,
+  '白魔道士': 62124, '学者': 62128, '占星術師': 62133, '賢者': 62140,
+  'モンク': 62120, '竜騎士': 62122, '忍者': 62130, '侍': 62134, 'リーパー': 62139, 'ヴァイパー': 62141,
+  '吟遊詩人': 62123, '機工士': 62131, '踊り子': 62138,
+  '黒魔道士': 62125, '召喚士': 62127, '赤魔道士': 62135, 'ピクトマンサー': 62142, '青魔道士': 62136,
+};
+
+const crescentNoteSets: GearSet[] = [
+  {
+    id: 'defender',
+    typeName: 'ディフェンダー',
+    roleLabel: 'タンク',
+    color: '#fbbf24',
+    jobs: [...JOB_GROUPS.tank],
+    mainStat: 'STR / VIT',
+    pieces: [
+      { slot: '頭', name: 'クレセントノート・ディフェンダーペルト',      ldsId: 'c51ad7501ea', icon: 56815, mainStat1Val: 403, mainStat2Val: 432, subStat1: 'CR',   subStat1Val: 243, subStat2: '意思力', subStat2Val: 170 },
+      { slot: '胴', name: 'クレセントノート・ディフェンダーベスト',       ldsId: '697c5ec1a43', icon: 57207, mainStat1Val: 639, mainStat2Val: 686, subStat1: '不屈', subStat1Val: 387, subStat2: 'CR',   subStat2Val: 271 },
+      { slot: '手', name: 'クレセントノート・ディフェンダーアームレット', ldsId: '0c1feef4aa0', icon: 56322, mainStat1Val: 403, mainStat2Val: 432, subStat1: '意思力', subStat1Val: 243, subStat2: 'CR',   subStat2Val: 170 },
+      { slot: '脚', name: 'クレセントノート・ディフェンダーロインクロス', ldsId: '1ed88cc8b4f', icon: 57732, mainStat1Val: 639, mainStat2Val: 686, subStat1: '意思力', subStat1Val: 387, subStat2: '不屈', subStat2Val: 271 },
+      { slot: '足', name: 'クレセントノート・ディフェンダーフット',       ldsId: '022056e17e3', icon: 57824, mainStat1Val: 403, mainStat2Val: 432, subStat1: '意思力', subStat1Val: 243, subStat2: 'CR',   subStat2Val: 170 },
+    ],
+  },
+  {
+    id: 'slayer',
+    typeName: 'スレイヤー',
+    roleLabel: '竜騎士 / リーパー',
+    color: '#f87171',
+    jobs: ['竜騎士', 'リーパー'],
+    mainStat: 'STR / VIT',
+    pieces: [
+      { slot: '頭', name: 'クレセントノート・スレイヤーペルト',      ldsId: '63060b72d3b', icon: 56816, mainStat1Val: 403, mainStat2Val: 432, subStat1: '意思力', subStat1Val: 243, subStat2: 'DH',   subStat2Val: 170 },
+      { slot: '胴', name: 'クレセントノート・スレイヤーベスト',       ldsId: '7fee811da22', icon: 57208, mainStat1Val: 639, mainStat2Val: 686, subStat1: 'CR',   subStat1Val: 387, subStat2: '意思力', subStat2Val: 271 },
+      { slot: '手', name: 'クレセントノート・スレイヤーアームレット', ldsId: 'f0f4a30aae3', icon: 56323, mainStat1Val: 403, mainStat2Val: 432, subStat1: 'DH',   subStat1Val: 243, subStat2: 'CR',   subStat2Val: 170 },
+      { slot: '脚', name: 'クレセントノート・スレイヤーロインクロス', ldsId: 'adb1155d75e', icon: 57733, mainStat1Val: 639, mainStat2Val: 686, subStat1: '意思力', subStat1Val: 387, subStat2: 'DH',   subStat2Val: 271 },
+      { slot: '足', name: 'クレセントノート・スレイヤーフット',       ldsId: '40ff1600ef2', icon: 57825, mainStat1Val: 403, mainStat2Val: 432, subStat1: 'CR',   subStat1Val: 243, subStat2: '意思力', subStat2Val: 170 },
+    ],
+  },
+  {
+    id: 'striker',
+    typeName: 'ストライカー',
+    roleLabel: 'モンク / 侍',
+    color: '#fb923c',
+    jobs: ['モンク', '侍'],
+    mainStat: 'STR / VIT',
+    pieces: [
+      { slot: '頭', name: 'クレセントノート・ストライカーバイコーン',    ldsId: 'a20bed42baa', icon: 56819, mainStat1Val: 403, mainStat2Val: 432, subStat1: 'DH',   subStat1Val: 243, subStat2: '意思力', subStat2Val: 170 },
+      { slot: '胴', name: 'クレセントノート・ストライカージュストコール', ldsId: '1580f10ca2e', icon: 57211, mainStat1Val: 639, mainStat2Val: 686, subStat1: 'CR',   subStat1Val: 387, subStat2: '意思力', subStat2Val: 271 },
+      { slot: '手', name: 'クレセントノート・ストライカーグローブ',      ldsId: 'f2205d7f8af', icon: 56326, mainStat1Val: 403, mainStat2Val: 432, subStat1: 'CR',   subStat1Val: 243, subStat2: '意思力', subStat2Val: 170 },
+      { slot: '脚', name: 'クレセントノート・ストライカースロップ',      ldsId: '4e2e959d3a7', icon: 57736, mainStat1Val: 639, mainStat2Val: 686, subStat1: '意思力', subStat1Val: 387, subStat2: 'DH',   subStat2Val: 271 },
+      { slot: '足', name: 'クレセントノート・ストライカーブーツ',        ldsId: 'dc5b81b425f', icon: 57828, mainStat1Val: 403, mainStat2Val: 432, subStat1: 'CR',   subStat1Val: 243, subStat2: 'DH',   subStat2Val: 170 },
+    ],
+  },
+  {
+    id: 'scout',
+    typeName: 'スカウト',
+    roleLabel: '忍者 / ヴァイパー',
+    color: '#a78bfa',
+    jobs: ['忍者', 'ヴァイパー'],
+    mainStat: 'DEX / VIT',
+    pieces: [
+      { slot: '頭', name: 'クレセントノート・スカウトバイコーン',    ldsId: 'eb648fcb897', icon: 56821, mainStat1Val: 403, mainStat2Val: 432, subStat1: 'DH',   subStat1Val: 243, subStat2: 'CR',   subStat2Val: 170 },
+      { slot: '胴', name: 'クレセントノート・スカウトジュストコール', ldsId: '994e4a82938', icon: 57213, mainStat1Val: 639, mainStat2Val: 686, subStat1: '意思力', subStat1Val: 387, subStat2: 'CR',   subStat2Val: 271 },
+      { slot: '手', name: 'クレセントノート・スカウトグローブ',      ldsId: 'd3ad26b2387', icon: 56328, mainStat1Val: 403, mainStat2Val: 432, subStat1: '意思力', subStat1Val: 243, subStat2: 'CR',   subStat2Val: 170 },
+      { slot: '脚', name: 'クレセントノート・スカウトスロップ',      ldsId: 'c6361c0f665', icon: 57738, mainStat1Val: 639, mainStat2Val: 686, subStat1: 'CR',   subStat1Val: 387, subStat2: 'DH',   subStat2Val: 271 },
+      { slot: '足', name: 'クレセントノート・スカウトブーツ',        ldsId: 'f0549d08059', icon: 57830, mainStat1Val: 403, mainStat2Val: 432, subStat1: 'CR',   subStat1Val: 243, subStat2: '意思力', subStat2Val: 170 },
+    ],
+  },
+  {
+    id: 'ranger',
+    typeName: 'レンジャー',
+    roleLabel: '',
+    color: '#60a5fa',
+    jobs: [...JOB_GROUPS.ranged],
+    mainStat: 'DEX / VIT',
+    pieces: [
+      { slot: '頭', name: 'クレセントノート・レンジャーバイコーン',    ldsId: 'd90d74a6ba1', icon: 56820, mainStat1Val: 403, mainStat2Val: 432, subStat1: 'CR',   subStat1Val: 243, subStat2: '意思力', subStat2Val: 170 },
+      { slot: '胴', name: 'クレセントノート・レンジャージュストコール', ldsId: 'a015c8713fe', icon: 57212, mainStat1Val: 639, mainStat2Val: 686, subStat1: '意思力', subStat1Val: 387, subStat2: 'DH',   subStat2Val: 271 },
+      { slot: '手', name: 'クレセントノート・レンジャーグローブ',      ldsId: 'eaa92e0a97f', icon: 56327, mainStat1Val: 403, mainStat2Val: 432, subStat1: 'DH',   subStat1Val: 243, subStat2: '意思力', subStat2Val: 170 },
+      { slot: '脚', name: 'クレセントノート・レンジャースロップ',      ldsId: '09b28036753', icon: 57737, mainStat1Val: 639, mainStat2Val: 686, subStat1: 'CR',   subStat1Val: 387, subStat2: '意思力', subStat2Val: 271 },
+      { slot: '足', name: 'クレセントノート・レンジャーブーツ',        ldsId: '68b2194e5de', icon: 57829, mainStat1Val: 403, mainStat2Val: 432, subStat1: '意思力', subStat1Val: 243, subStat2: 'DH',   subStat2Val: 170 },
+    ],
+  },
+  {
+    id: 'healer',
+    typeName: 'ヒーラー',
+    roleLabel: '',
+    color: '#34d399',
+    jobs: [...JOB_GROUPS.healer],
+    mainStat: 'MND / VIT',
+    pieces: [
+      { slot: '頭', name: 'クレセントノート・ヒーラーシュガーローフ', ldsId: 'b5bbb8cf99b', icon: 56817, mainStat1Val: 403, mainStat2Val: 389, subStat1: '意思力', subStat1Val: 243, subStat2: '信仰心', subStat2Val: 170 },
+      { slot: '胴', name: 'クレセントノート・ヒーラーローブ',         ldsId: '84de562eb93', icon: 57209, mainStat1Val: 639, mainStat2Val: 617, subStat1: 'CR',   subStat1Val: 387, subStat2: '意思力', subStat2Val: 271 },
+      { slot: '手', name: 'クレセントノート・ヒーラーリストグローブ', ldsId: 'ca95c956aa2', icon: 56324, mainStat1Val: 403, mainStat2Val: 389, subStat1: 'CR',   subStat1Val: 243, subStat2: '意思力', subStat2Val: 170 },
+      { slot: '脚', name: 'クレセントノート・ヒーラースカート',       ldsId: 'd551d9909cb', icon: 57734, mainStat1Val: 639, mainStat2Val: 617, subStat1: '意思力', subStat1Val: 387, subStat2: 'CR',   subStat2Val: 271 },
+      { slot: '足', name: 'クレセントノート・ヒーラーブーツ',         ldsId: '95ac05ca335', icon: 57826, mainStat1Val: 403, mainStat2Val: 389, subStat1: '信仰心', subStat1Val: 243, subStat2: '意思力', subStat2Val: 170 },
+    ],
+  },
+  {
+    id: 'caster',
+    typeName: 'キャスター',
+    roleLabel: '',
+    color: '#c084fc',
+    jobs: [...JOB_GROUPS.caster],
+    mainStat: 'INT / VIT',
+    pieces: [
+      { slot: '頭', name: 'クレセントノート・キャスターシュガーローフ', ldsId: '869d0dc2182', icon: 56818, mainStat1Val: 403, mainStat2Val: 389, subStat1: 'DH',   subStat1Val: 243, subStat2: 'CR',   subStat2Val: 170 },
+      { slot: '胴', name: 'クレセントノート・キャスターローブ',         ldsId: 'ef753924382', icon: 57210, mainStat1Val: 639, mainStat2Val: 617, subStat1: 'CR',   subStat1Val: 387, subStat2: '意思力', subStat2Val: 271 },
+      { slot: '手', name: 'クレセントノート・キャスターリストグローブ', ldsId: 'e1f6a5ce132', icon: 56325, mainStat1Val: 403, mainStat2Val: 389, subStat1: '意思力', subStat1Val: 243, subStat2: 'DH',   subStat2Val: 170 },
+      { slot: '脚', name: 'クレセントノート・キャスタースカート',       ldsId: '2f4b97ab546', icon: 57735, mainStat1Val: 639, mainStat2Val: 617, subStat1: '意思力', subStat1Val: 387, subStat2: 'CR',   subStat2Val: 271 },
+      { slot: '足', name: 'クレセントノート・キャスターブーツ',         ldsId: 'b3c6c887ce9', icon: 57827, mainStat1Val: 403, mainStat2Val: 389, subStat1: 'CR',   subStat1Val: 243, subStat2: 'DH',   subStat2Val: 170 },
+    ],
+  },
+];
+
+const magiAccessories = [
+  {
+    id: 'magi-fighter',
+    variant: 'ファイター系',
+    color: '#fbbf24',
+    mainStat: 'STR / VIT',
+    mainStat1Val: 317,
+    mainStat2Val: 341,
+    crVal: 192,
+    jobs: [...JOB_GROUPS.tank, 'モンク', '竜騎士', '忍者', '侍', 'リーパー', 'ヴァイパー', ...JOB_GROUPS.ranged],
+    pieces: [
+      { slot: '耳飾り',    name: 'クレセントマギ・ファイターイヤリング',        ldsId: '5a32d977cbf', icon: 55562, mainBonus: 40, specialBonus: 1, note: '',           how: 'CE・宝箱（銅/銀）ドロップ（確率★）' },
+      { slot: '首飾り',    name: 'クレセントマギ・ファイターネックレス',        ldsId: 'f5e008fc846', icon: 55107, mainBonus: 40, specialBonus: 1, note: '',           how: 'CE・宝箱（銅/銀）ドロップ（確率★）' },
+      { slot: '腕輪',      name: 'クレセントマギ・ファイターブレスレット',      ldsId: '30e4b25df7c', icon: 55905, mainBonus: 40, specialBonus: 1, note: '',           how: 'CE・宝箱（銅/銀）ドロップ（確率★）' },
+      { slot: '指輪',      name: 'クレセントマギ・ファイターリング',            ldsId: 'ea5ccdc6b40', icon: 54757, mainBonus: 40, specialBonus: 1, note: '',           how: 'マジックポット（黄金箱）ドロップ（確率★★）' },
+      { slot: '指輪（M）', name: 'クレセントマギ・マスターファイターリング',    ldsId: 'b85e20e16f3', icon: 54758, mainBonus: 80, specialBonus: 2, note: '5種装備時',  how: 'フォーチュンカロット（確率★★★）' },
+    ],
+  },
+  {
+    id: 'magi-sorcerer',
+    variant: 'ソーサラー系',
+    color: '#c084fc',
+    mainStat: 'MND / VIT',
+    mainStat1Val: 317,
+    mainStat2Val: 307,
+    crVal: 192,
+    jobs: [...JOB_GROUPS.healer, ...JOB_GROUPS.caster],
+    pieces: [
+      { slot: '耳飾り',    name: 'クレセントマギ・ソーサラーイヤリング',        ldsId: 'c80ab1c4191', icon: 55562, mainBonus: 40, specialBonus: 1, note: '',           how: 'CE・宝箱（銅/銀）ドロップ（確率★）' },
+      { slot: '首飾り',    name: 'クレセントマギ・ソーサラーネックレス',        ldsId: '9c3682b2182', icon: 55107, mainBonus: 40, specialBonus: 1, note: '',           how: 'CE・宝箱（銅/銀）ドロップ（確率★）' },
+      { slot: '腕輪',      name: 'クレセントマギ・ソーサラーブレスレット',      ldsId: '5d5935d763d', icon: 55905, mainBonus: 40, specialBonus: 1, note: '',           how: 'CE・宝箱（銅/銀）ドロップ（確率★）' },
+      { slot: '指輪',      name: 'クレセントマギ・ソーサラーリング',            ldsId: '0523bb8e526', icon: 54757, mainBonus: 40, specialBonus: 1, note: '',           how: 'マジックポット（黄金箱）ドロップ（確率★★）' },
+      { slot: '指輪（M）', name: 'クレセントマギ・マスターソーサラーリング',    ldsId: '2cdc92abb12', icon: 54758, mainBonus: 80, specialBonus: 2, note: '5種装備時',  how: 'フォーチュンカロット（確率★★★）' },
+    ],
+  },
+];
+
+---
+
+<BaseLayout
+  title="装備一覧 | クレセントアイル | FF14"
+  description="FF14 クレセントアイル（パッチ 7.4）の装備一覧。クレセントノート・レアアクセ・FF5モチーフ各装備の入手方法・強化素材・パラメータ・ジョブ制限。"
+>
+  <div class="page-hero">
+    <div class="container mx-auto px-4 pt-16 pb-8 relative z-10">
+      <h1 class="font-display text-4xl md:text-5xl text-moon-light">装備一覧</h1>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-10 max-w-7xl">
+    <div class="flex gap-8 relative">
+
+      <!-- メインコンテンツ -->
+      <div class="min-w-0 flex-1" id="gear-main">
+
+        <!-- ━━━ クレセントノート装備 ━━━ -->
+        <section class="mb-12" id="section-crescent-note">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+            クレセントノート装備
+          </h2>
+
+          <div class="section-card mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div>
+                <div class="text-moon-dim mb-1 text-[0.65rem] uppercase tracking-wider">入手方法</div>
+                <div class="text-slate leading-relaxed">
+                  探査隊の古銭鑑定士（X:38.1 Y:7.0）に話しかけて交換<br/>
+                  <span class="text-teal font-mono"><img src={gearIconUrl(65119)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />十二都市銀貨 4,000 枚 / 部位</span>（全身 20,000 枚）
+                </div>
+              </div>
+              <div>
+                <div class="text-moon-dim mb-1 text-[0.65rem] uppercase tracking-wider">クレセントアイル専用効果</div>
+                <div class="text-slate leading-relaxed">
+                  主能力補正 + <span class="text-teal">特殊補正</span>（サポートアクション与ダメ上昇）<br/>
+                  無強化: <span class="text-teal">+1/部位</span>（全身 +5%）
+                </div>
+              </div>
+              <div>
+                <div class="text-moon-dim mb-1 text-[0.65rem] uppercase tracking-wider">備考</div>
+                <div class="text-slate leading-relaxed">
+                  IL745（コンテンツ内 IL700 シンク）<br/>
+                  マテリア無効 / 染色可 / マーケット取引不可
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5">
+              <div class="text-moon-dim text-[0.65rem] uppercase tracking-wider mb-2">強化方法（探査隊の被服係 X:37.6 Y:7.1）</div>
+              <div class="overflow-x-auto">
+                <table class="text-xs border-collapse w-full">
+                  <thead>
+                    <tr class="border-b border-[var(--color-border)]">
+                      <th class="text-left py-1.5 px-3 text-moon-dim font-normal">段階</th>
+                      <th class="text-left py-1.5 px-3 text-moon-dim font-normal">素材①</th>
+                      <th class="text-left py-1.5 px-3 text-moon-dim font-normal">素材②</th>
+                      <th class="text-left py-1.5 px-3 text-moon-dim font-normal">特殊補正/部位</th>
+                      <th class="text-left py-1.5 px-3 text-moon-dim font-normal">全身合計</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="border-b border-night-300/40">
+                      <td class="py-1.5 px-3 text-teal font-mono">無強化</td>
+                      <td class="py-1.5 px-3 text-slate">—</td>
+                      <td class="py-1.5 px-3 text-slate">—</td>
+                      <td class="py-1.5 px-3 font-mono text-teal">+1</td>
+                      <td class="py-1.5 px-3 font-mono text-teal">+5%</td>
+                    </tr>
+                    <tr class="border-b border-night-300/40">
+                      <td class="py-1.5 px-3 text-gold font-mono">+1</td>
+                      <td class="py-1.5 px-3 text-slate">
+                        <div class="flex items-center gap-1.5">
+                          <img src={gearIconUrl(22653)} alt="" class="w-5 h-5 rounded flex-shrink-0" style="image-rendering:pixelated" />
+                          <span><span class="text-gold">フィキサチーフ</span> ×3 <span class="text-[0.65rem] text-slate/60">（<img src={gearIconUrl(65118)} alt="" class="inline align-middle w-3.5 h-3.5 rounded" style="image-rendering:pixelated" />金貨1,600/個）</span></span>
+                        </div>
+                      </td>
+                      <td class="py-1.5 px-3 text-slate">
+                        <div class="flex items-center gap-1.5">
+                          <img src={gearIconUrl(21656)} alt="" class="w-5 h-5 rounded flex-shrink-0" style="image-rendering:pixelated" />
+                          <span>妖銀糸 ×3 <span class="text-[0.65rem] text-slate/60">（<img src={gearIconUrl(65119)} alt="" class="inline align-middle w-3.5 h-3.5 rounded" style="image-rendering:pixelated" />銀貨1,200/個）</span></span>
+                        </div>
+                      </td>
+                      <td class="py-1.5 px-3 font-mono text-gold">+2</td>
+                      <td class="py-1.5 px-3 font-mono text-gold">+10%</td>
+                    </tr>
+                    <tr>
+                      <td class="py-1.5 px-3 text-crimson font-mono">+2</td>
+                      <td class="py-1.5 px-3 text-slate">
+                        <div class="flex items-center gap-1.5">
+                          <img src={gearIconUrl(22659)} alt="" class="w-5 h-5 rounded flex-shrink-0" style="image-rendering:pixelated" />
+                          <span><span class="text-crimson">エクスフィキサチーフ</span> ×6 <span class="text-[0.65rem] text-slate/60">（力の魔石10個/個）</span></span>
+                        </div>
+                      </td>
+                      <td class="py-1.5 px-3 text-slate">
+                        <div class="flex items-center gap-1.5">
+                          <img src={gearIconUrl(21657)} alt="" class="w-5 h-5 rounded flex-shrink-0" style="image-rendering:pixelated" />
+                          <span>妖金糸 ×3 <span class="text-[0.65rem] text-slate/60">（銅箱/銀箱 低確率）</span></span>
+                        </div>
+                      </td>
+                      <td class="py-1.5 px-3 font-mono text-crimson">+3</td>
+                      <td class="py-1.5 px-3 font-mono text-crimson">+15%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="text-slate/50 text-[0.65rem] mt-2">全身 +2 ＋ クレセントマギ 5種 = 特殊補正 最大 +21%</p>
+            </div>
+          </div>
+
+          {crescentNoteSets.map(set => {
+            const subStats = [...new Set(set.pieces.flatMap(p => [p.subStat1, p.subStat2]))];
+            return (
+            <div
+              class="section-card mb-4 gear-group"
+              data-jobs={set.jobs.join(',')}
+            >
+              <div class="flex flex-wrap items-center gap-2 mb-3">
+                <div
+                  class="px-2 py-0.5 rounded text-[0.65rem] font-semibold tracking-wider flex-shrink-0"
+                  style={`background:${set.color}18;color:${set.color};border:1px solid ${set.color}40`}
+                >
+                  {set.typeName}
+                </div>
+                {set.roleLabel && <span class="text-xs text-slate/60 flex-shrink-0">{set.roleLabel}</span>}
+                <div class="flex flex-wrap gap-0.5 ml-auto">
+                  {set.jobs.map(job => JOB_ICONS[job]
+                    ? <img src={jobIconUrl(JOB_ICONS[job])} alt={job} title={job} data-job={job} class="w-5 h-5 rounded job-tag-icon" style="image-rendering:pixelated" />
+                    : <span class="text-[0.65rem] text-slate/40">{job}</span>
+                  )}
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs border-collapse">
+                  <thead>
+                    <tr class="border-b border-[var(--color-border)]">
+                      <th class="text-left py-1.5 px-2 text-moon-dim font-normal w-8">部位</th>
+                      <th class="text-left py-1.5 px-2 text-moon-dim font-normal">装備名</th>
+                      <th class="text-center py-1.5 px-2 text-moon-dim font-normal w-10">IL</th>
+                      {set.mainStat.split(' / ').map((ms: string) => (
+                        <th class="text-center py-1.5 px-2 text-moon-dim font-normal w-16">{ms}</th>
+                      ))}
+                      {subStats.map(s => (
+                        <th class="text-center py-1.5 px-2 text-moon-dim font-normal w-16">{s}</th>
+                      ))}
+                      <th class="text-center py-1.5 px-2 text-moon-dim font-normal w-20">主補正（無/+1/+2）</th>
+                      <th class="text-center py-1.5 px-2 text-moon-dim font-normal w-20">特殊補正（無/+1/+2）</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {set.pieces.map(p => (
+                      <tr class="border-b border-night-300/40 last:border-0 hover:bg-night-300/20">
+                        <td class="py-1.5 px-2 text-moon-dim text-center">{p.slot}</td>
+                        <td class="py-1.5 px-2 font-medium">
+                          <div class="flex items-center gap-1.5">
+                            <img src={gearIconUrl(p.icon)} alt="" class="w-6 h-6 flex-shrink-0 rounded" loading="lazy" style="image-rendering:pixelated" />
+                            {p.ldsId
+                              ? <a href={`${BASE_URL}${p.ldsId}/`} class="eorzeadb_link">{p.name}</a>
+                              : <span class="text-moon/70">{p.name}</span>
+                            }
+                          </div>
+                        </td>
+                        <td class="py-1.5 px-2 text-center font-mono text-teal/70">745</td>
+                        {[p.mainStat1Val, p.mainStat2Val].map((v: number) => (
+                          <td class="py-1.5 px-2 text-center text-slate/80 font-mono">{v}</td>
+                        ))}
+                        {subStats.map(s => (
+                          <td class="py-1.5 px-2 text-center font-mono text-moon/60">
+                            {p.subStat1 === s ? p.subStat1Val : p.subStat2 === s ? p.subStat2Val : '—'}
+                          </td>
+                        ))}
+                        <td class="py-1.5 px-2 text-center font-mono text-[0.68rem]">
+                          <span class="text-moon/50">40</span>
+                          <span class="text-slate/30"> / </span>
+                          <span class="text-teal">80</span>
+                          <span class="text-slate/30"> / </span>
+                          <span class="text-gold">120</span>
+                        </td>
+                        <td class="py-1.5 px-2 text-center font-mono text-[0.68rem]">
+                          <span class="text-moon/50">+1</span>
+                          <span class="text-slate/30"> / </span>
+                          <span class="text-teal">+2</span>
+                          <span class="text-slate/30"> / </span>
+                          <span class="text-gold">+3</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            );
+          })}
+        </section>
+
+        <!-- ━━━ クレセントマギ アクセサリー ━━━ -->
+        <section class="mb-12" id="section-magi">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+            クレセントマギ アクセサリー
+            <span class="ml-2 text-[0.6rem] px-1.5 py-0.5 rounded border bg-crimson/10 text-crimson border-crimson/30 font-mono normal-case tracking-normal">Patch 7.4</span>
+          </h2>
+
+          <div class="section-card mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs mb-4">
+              <div>
+                <div class="text-moon-dim mb-1 text-[0.65rem] uppercase tracking-wider">入手方法</div>
+                <div class="text-slate leading-relaxed">CE・宝箱（銅/銀）・マジックポット・フォーチュンカロットからランダムドロップ</div>
+              </div>
+              <div>
+                <div class="text-moon-dim mb-1 text-[0.65rem] uppercase tracking-wider">IL / 取引</div>
+                <div class="text-slate">IL 745 / <span class="text-teal">マーケットボード取引可</span></div>
+              </div>
+              <div>
+                <div class="text-moon-dim mb-1 text-[0.65rem] uppercase tracking-wider">フルセット効果</div>
+                <div class="text-slate">5種装備で 特殊補正 +6%（主能力補正 +240）</div>
+              </div>
+            </div>
+
+            <div class="text-[0.65rem] text-moon-dim uppercase tracking-wider mb-2">CE別ドロップ部位（耳/首/腕）</div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs mb-1">
+              <div class="bg-night-300/30 rounded p-2">
+                <div class="text-moon-dim mb-1 text-[0.6rem]">耳飾り</div>
+                <div class="text-slate/70">黒の連隊 / デスクロー / マインドフレア / バーサーカー / クロイスターデーモン</div>
+              </div>
+              <div class="bg-night-300/30 rounded p-2">
+                <div class="text-moon-dim mb-1 text-[0.6rem]">首飾り</div>
+                <div class="text-slate/70">コイントートス / ネオガルラ / 守護騎士 / ランパントライオン / リペアドライオン</div>
+              </div>
+              <div class="bg-night-300/30 rounded p-2">
+                <div class="text-moon-dim mb-1 text-[0.6rem]">腕輪</div>
+                <div class="text-slate/70">ペタロドゥス / セキュリティコマンドー / ヒンキーパンク / 水晶竜 / ミシカルアイドル</div>
+              </div>
+            </div>
+            <p class="text-slate/40 text-[0.6rem]">ファイター系・ソーサラー系どちらが落ちるかはランダム</p>
+          </div>
+
+          {magiAccessories.map(acc => (
+            <div
+              class="section-card mb-4 gear-group"
+              data-jobs={acc.jobs.join(',')}
+            >
+              <div class="flex flex-wrap items-center gap-2 mb-3">
+                <div
+                  class="px-2 py-0.5 rounded text-[0.65rem] font-semibold tracking-wider"
+                  style={`background:${acc.color}18;color:${acc.color};border:1px solid ${acc.color}40`}
+                >
+                  {acc.variant}
+                </div>
+                <div class="flex flex-wrap gap-0.5">
+                  {acc.jobs.map(job => JOB_ICONS[job]
+                    ? <img src={jobIconUrl(JOB_ICONS[job])} alt={job} title={job} data-job={job} class="w-5 h-5 rounded job-tag-icon" style="image-rendering:pixelated" />
+                    : <span class="text-[0.65rem] text-slate/40">{job}</span>
+                  )}
+                </div>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs border-collapse">
+                  <thead>
+                    <tr class="border-b border-[var(--color-border)]">
+                      <th class="text-left py-1.5 px-2 text-moon-dim font-normal w-16">部位</th>
+                      <th class="text-left py-1.5 px-2 text-moon-dim font-normal">装備名</th>
+                      <th class="text-center py-1.5 px-2 text-moon-dim font-normal w-10">IL</th>
+                      {acc.mainStat.split(' / ').map((ms: string) => (
+                        <th class="text-center py-1.5 px-2 text-moon-dim font-normal w-16">{ms}</th>
+                      ))}
+                      <th class="text-center py-1.5 px-2 text-moon-dim font-normal w-12">CR</th>
+                      <th class="text-center py-1.5 px-2 text-moon-dim font-normal w-14">主補正</th>
+                      <th class="text-center py-1.5 px-2 text-moon-dim font-normal w-14">特殊補正</th>
+                      <th class="text-left py-1.5 px-2 text-moon-dim font-normal w-20">備考</th>
+                      <th class="text-left py-1.5 px-2 text-moon-dim font-normal">入手方法</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {acc.pieces.map(p => (
+                      <tr class="border-b border-night-300/40 last:border-0 hover:bg-night-300/20">
+                        <td class="py-1.5 px-2 text-moon-dim">{p.slot}</td>
+                        <td class="py-1.5 px-2 font-medium">
+                          <div class="flex items-center gap-1.5">
+                            {(p as any).icon && <img src={gearIconUrl((p as any).icon)} alt="" class="w-6 h-6 flex-shrink-0 rounded" loading="lazy" style="image-rendering:pixelated" />}
+                            {p.ldsId
+                              ? <a href={`${BASE_URL}${p.ldsId}/`} class="eorzeadb_link">{p.name}</a>
+                              : <span class="text-moon/70">{p.name}</span>
+                            }
+                          </div>
+                        </td>
+                        <td class="py-1.5 px-2 text-center font-mono text-teal/70">745</td>
+                        {[acc.mainStat1Val, acc.mainStat2Val].map((v: number) => (
+                          <td class="py-1.5 px-2 text-center text-slate/80 font-mono">{v}</td>
+                        ))}
+                        <td class="py-1.5 px-2 text-center font-mono text-moon/60">{acc.crVal}</td>
+                        <td class="py-1.5 px-2 text-center font-mono text-teal/80">+{p.mainBonus}</td>
+                        <td class="py-1.5 px-2 text-center font-mono text-teal/80">+{p.specialBonus}</td>
+                        <td class="py-1.5 px-2 text-[0.65rem] text-gold/70">{p.note}</td>
+                        <td class="py-1.5 px-2 text-slate/70 text-[0.7rem]">{p.how}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+          <div class="mt-4 flex flex-wrap gap-4">
+            <a href="./chests" class="text-xs text-teal/80 hover:text-teal transition-colors">宝箱の配置を見る →</a>
+            <a href="./fate" class="text-xs text-teal/80 hover:text-teal transition-colors">FATE・CE 攻略一覧を見る →</a>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- 右サイドバー：ジョブフィルター -->
+      <aside class="hidden xl:block w-44 flex-shrink-0">
+        <div style="position: sticky; top: 80px; max-height: calc(100vh - 96px); overflow-y: auto;">
+          <GearFilter client:visible base={BASE} />
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  // ジョブフィルター: 選択ジョブが含まれる gear-group だけ表示 + ジョブアイコンをハイライト
+  window.addEventListener('jobfilter', (e: any) => {
+    const selected: string[] = e.detail.jobs;
+    const groups = document.querySelectorAll<HTMLElement>('.gear-group');
+    groups.forEach(el => {
+      const jobs = (el.dataset.jobs ?? '').split(',');
+      const visible = selected.length === 0 || selected.some(j => jobs.includes(j));
+      el.style.display = visible ? '' : 'none';
+    });
+
+    // ジョブアイコンのハイライト
+    const icons = document.querySelectorAll<HTMLElement>('.job-tag-icon');
+    icons.forEach(img => {
+      const job = (img as HTMLImageElement).dataset.job ?? '';
+      if (selected.length === 0) {
+        img.classList.remove('job-tag-icon--active', 'job-tag-icon--dim');
+      } else if (selected.includes(job)) {
+        img.classList.add('job-tag-icon--active');
+        img.classList.remove('job-tag-icon--dim');
+      } else {
+        img.classList.add('job-tag-icon--dim');
+        img.classList.remove('job-tag-icon--active');
+      }
+    });
+  });
+</script>
+
+<style is:global>
+.job-tag-icon {
+  opacity: 0.75;
+  transition: opacity 0.15s, filter 0.15s, outline 0.15s;
+}
+.job-tag-icon--active {
+  opacity: 1;
+  filter: drop-shadow(0 0 3px rgba(45,212,191,0.8));
+  outline: 1px solid rgba(45,212,191,0.6);
+  outline-offset: 1px;
+}
+.job-tag-icon--dim {
+  opacity: 0.2;
+}
+</style>

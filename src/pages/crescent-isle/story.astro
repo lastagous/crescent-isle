@@ -1,0 +1,325 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import TableOfContents from '../../components/ui/TableOfContents.svelte';
+import { itemIconUrl } from '../../data/items';
+
+// ─── データ出典 ────────────────────────────────────────────────────────────────
+// クエスト進行: https://game8.jp/ff14/668346 / https://www.sunny-stronger.com/
+// エーテライト: https://knt-a.com/crescent/
+// ナレッジレベル: https://luaazul.net/2025/05/31/ff14_7_25_crescentisl_levelup_demiatma_collection_points/
+
+type Quest = {
+  order: number;
+  title: string;
+  ldsId: string;
+  type: string;
+  npc: string;
+  desc: string;
+  unlock?: string;
+};
+
+const QUEST_URL = 'https://jp.finalfantasyxiv.com/lodestone/playguide/db/quest/';
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+const questIconUrl = (type: string) =>
+  type.includes('メイン')
+    ? `${BASE}/icons/quest/main_quest.png`
+    : `${BASE}/icons/quest/side_quest.png`;
+
+const quests: Quest[] = [
+  {
+    order: 1,
+    title: 'ケテンラム、最後の冒険',
+    ldsId: 'bd2f77c9a2a',
+    type: 'メインクエスト',
+    npc: '探査隊の連絡員（トライヨラ X:17.1 Y:11.8）',
+    desc: '死の三角海域に浮かぶ三日月島への調査依頼を受ける。探検家ケテンラムと合流し、島への渡航手段を確保して初めてクレセントアイルに降り立つ。',
+  },
+  {
+    order: 2,
+    title: '無人の町',
+    ldsId: '96c1e702d66',
+    type: 'メインクエスト',
+    npc: 'ケテンラム（蜃気楼の浜 付近）',
+    desc: '廃墟となった蜃気楼の町を探索する。魔法の封印がかかった石棺を発見し、内部から1,500年以上眠っていたトンベリ型の存在「アーカイブ」が目覚める。かつてトンベリ病と呼ばれた第五星暦の疫病によって人々が消えた経緯が明らかになる。',
+  },
+  {
+    order: 3,
+    title: '使えない使い魔',
+    ldsId: 'c6fac92f8be',
+    type: 'メインクエスト',
+    npc: 'アーカイブ（蜃気楼の町）',
+    desc: 'アイリスという妖精が現れ、アーカイブの知識が封印されていることが発覚する。封印を解くには「ナレッジ」を積んで知識を提供する必要があると判明。蜃気楼の町の出口でジェッフロイと会話することでコンテンツが正式に開放される。',
+    unlock: 'コンテンツ開放・サポートジョブ継承クエスト発生',
+  },
+  {
+    order: 4,
+    title: '「サポートジョブ」の継承',
+    ldsId: '91b7394742c',
+    type: 'サブクエスト（自動発生）',
+    npc: 'アーカイブ（蜃気楼の町）',
+    desc: '「使えない使い魔」クリア後に自動発生する。アーカイブからソウルシャードを受け取り、最初の3つのサポートジョブが解放される。',
+    unlock: 'ナイト・モンク・吟遊詩人 解放',
+  },
+  {
+    order: 5,
+    title: '三日月島に棲む魔物',
+    ldsId: '334cdb05b97',
+    type: 'メインクエスト',
+    npc: 'ケテンラム（島内拠点）',
+    desc: '島の安全確保のために指定された3種類の魔物（バンダースナッチ・フライングリザード・ガルラ）を討伐する。アーカイブは収集した知識から封印を徐々に解除し、冒険者への援助を開始する。',
+  },
+  {
+    order: 6,
+    title: '島内に佇む古城',
+    ldsId: '05197f58ab2',
+    type: 'メインクエスト',
+    npc: 'アーカイブ（蜃気楼の町）',
+    desc: '「円蓋の城塞」（X:31.3 Y:17.0）にあるアムダプール様式の古城を調査する。「魔力を帯びた石材」を採集してアーカイブに報告し、島内に点在する他の文明遺跡の探査へと進む。',
+  },
+  {
+    order: 7,
+    title: '見えない共通項',
+    ldsId: '46efd85a39d',
+    type: 'メインクエスト',
+    npc: 'アーカイブ（蜃気楼の町）',
+    desc: '聖域跡・水晶洞窟・廃都の3か所から石材を収集する。調査の結果、島内にはニーム・マハ・スカラ・アムダプール・カルナックなど複数の第五星暦魔道都市様式の遺跡があり、すべてが「一人の人物によって築かれたもの」だったと判明する。',
+  },
+  {
+    order: 8,
+    title: '断絶した文明',
+    ldsId: 'ffb2bfa8205',
+    type: 'メインクエスト',
+    npc: 'アーカイブ（蜃気楼の町）',
+    desc: '石塔水沼北などの調査地点を巡り、魔大戦による第五星暦文明の滅亡が語られる。島の主が「世界を滅びに導く禁断の知識」を封印するためフォークタワーに結界を張り、妖異を番人として配置していたことが判明する。大妖異「クロイスターデーモン」の討伐が進行条件。',
+    unlock: 'ナレッジ Lv.20 必要 / フォークタワー解放への布石',
+  },
+  {
+    order: 9,
+    title: '蜃気楼、いまだ消えず',
+    ldsId: '8a8b295e047',
+    type: 'メインクエスト',
+    npc: 'ケテンラム（島内）',
+    desc: 'ケテンラムから「力の塔（フォークタワー）」への突入方法が発見されたと報告を受ける。冒険者はトライヨラへ帰還し、探査隊の連絡員に調査進捗を報告してクレセントアイルのメインストーリーが一段落する。',
+  },
+];
+
+const aetherytes = [
+  { name: '蜃気楼の浜',   coord: 'X:20.2 Y:12.2', note: 'コンテンツ入口に近い基点' },
+  { name: '南部丘陵',     coord: 'X:23.2 Y:21.5', note: '中央部へのアクセス拠点' },
+  { name: '岩窟の裏町',   coord: 'X:10.2 Y:22.5', note: '西側遺跡エリア' },
+  { name: '禁忌の廃都',   coord: 'X:24.2 Y:32.8', note: '南東の廃都遺跡' },
+  { name: '古樹の湿原',   coord: 'X:18.5 Y:33.8', note: '南部湿原エリア' },
+];
+
+
+const supportJobsFromQuest = [
+  { id: 'knight', name: 'ナイト',    when: '「サポートジョブの継承」クリア' },
+  { id: 'monk',   name: 'モンク',    when: '「サポートジョブの継承」クリア' },
+  { id: 'bard',   name: '吟遊詩人',  when: '「サポートジョブの継承」クリア' },
+];
+const crestIconUrl = (id: string) => `${BASE}/icons/support-jobs/crests/${id}.png`;
+
+const tocItems = [
+  { id: 'sec-quest',     label: 'クエスト進行' },
+  { id: 'sec-aetheryte', label: 'エーテライト開放' },
+  { id: 'sec-knowledge', label: 'ナレッジレベル' },
+  { id: 'sec-support',   label: 'サポートジョブ獲得' },
+];
+---
+
+<BaseLayout
+  title="ストーリー攻略 | クレセントアイル | FF14"
+  description="FF14 クレセントアイル（パッチ 7.25）のメインストーリー全クエスト攻略。エーテライト開放・ナレッジレベル上昇・サポートジョブ獲得の流れを解説。"
+>
+  <!-- Hero -->
+  <div class="page-hero">
+    <div class="container mx-auto px-4 pt-16 pb-8 relative z-10">
+      <h1 class="font-display text-4xl md:text-5xl text-moon-light">ストーリー攻略</h1>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-12 max-w-6xl">
+    <div class="flex gap-8 items-stretch">
+    <div class="flex-1 min-w-0">
+
+    <!-- 解放条件 -->
+    <div class="section-card mb-8 flex items-start gap-3 border-teal/20">
+      <span class="material-icons text-teal" style="font-size:1.25rem;margin-top:0.125rem">assignment</span>
+      <div class="text-sm text-slate leading-relaxed">
+        <span class="text-teal font-medium">解放条件：</span>
+        メインクエスト「黄金のレガシー」クリア済み、ファイター／ソーサラー Lv.100、平均 IL 690〜700 以上。
+        トライヨラ（X:17.1 Y:11.8）の NPC <span class="text-moon">探査隊の連絡員</span> に話しかけてクエストを受注する。
+      </div>
+    </div>
+
+    <!-- ━━━ クエスト一覧 ━━━ -->
+    <section id="sec-quest" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        クエスト進行
+      </h2>
+
+      <div class="flex flex-col gap-5">
+        {quests.map(q => (
+          <div class="section-card hover:border-teal/20 transition-colors">
+            <div class="flex items-start gap-4">
+              <div class="flex-shrink-0 flex flex-col items-center gap-1">
+                <img
+                  src={questIconUrl(q.type)}
+                  alt={q.type}
+                  class="w-10 h-10"
+                />
+                <span class="font-mono text-teal text-xs font-bold leading-none">{q.order}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2 mb-1">
+                  <h3 class="font-display text-base text-moon-light">
+                    <a href={`${QUEST_URL}${q.ldsId}/`} class="eorzeadb_link">{q.title}</a>
+                  </h3>
+                  <span class={`badge text-xs ${q.type.includes('メイン') ? 'badge-teal' : 'badge-gold'}`}>
+                    {q.type}
+                  </span>
+                </div>
+                <p class="text-xs text-moon-dim mb-2">
+                  受注 NPC：<span class="text-slate">{q.npc}</span>
+                </p>
+                <p class="text-slate text-sm leading-relaxed">{q.desc}</p>
+                {q.unlock && (
+                  <div class="mt-2 inline-flex items-center gap-1.5 text-xs text-gold bg-gold/5 border border-gold/20 rounded px-2 py-1">
+                    <span class="material-icons" style="font-size:14px;line-height:1">lock_open</span>
+                    <span>{q.unlock}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- ━━━ エーテライト（魔道通路）開放 ━━━ -->
+    <section id="sec-aetheryte" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        エーテライト（魔道通路）開放
+      </h2>
+
+      <div class="section-card mb-4">
+        <p class="text-slate text-sm leading-relaxed mb-4">
+          島内のエーテライトはクエスト進行に関係なく、<span class="text-teal font-medium">現地に赴いて調べる</span>だけで解放できます。
+          デスペナが発生しない序盤のうちに全箇所を解放しておくと、島内移動が大幅に楽になります。
+        </p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>エリア名</th>
+              <th>座標</th>
+            </tr>
+          </thead>
+          <tbody>
+            {aetherytes.map(a => (
+              <tr>
+                <td class="text-moon font-medium">{a.name}</td>
+                <td class="font-mono text-teal text-xs">{a.coord}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ━━━ ナレッジレベル ━━━ -->
+    <section id="sec-knowledge" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        ナレッジレベル
+      </h2>
+
+      <div class="section-card mb-4">
+        <p class="text-slate text-sm leading-relaxed mb-4">
+          クレセントアイル専用の成長指標。「<span class="text-teal font-medium"><img src={itemIconUrl(65117)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />知見</span>」という専用経験値を積んでレベルアップします。
+          上限は <span class="text-gold font-semibold">Lv.20</span>（パッチ 7.25 時点）。
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 text-sm">
+          <div class="bg-teal/5 border border-teal/20 rounded-lg p-3">
+            <div class="text-teal text-xs uppercase tracking-wider mb-1">知見の主な獲得源</div>
+            <ul class="text-slate text-xs space-y-1 leading-relaxed">
+              <li>・フィールドモンスターの討伐</li>
+              <li>・FATE 参加</li>
+              <li>・クリティカルエンカウント（CE）参加</li>
+              <li>・攻略手帳</li>
+              <li>・メインクエスト進行</li>
+            </ul>
+          </div>
+          <div class="bg-crimson/5 border border-crimson/20 rounded-lg p-3">
+            <div class="text-crimson text-xs uppercase tracking-wider mb-1">デスペナルティ（Lv.5 以上）</div>
+            <ul class="text-slate text-xs space-y-1 leading-relaxed">
+              <li>・死亡後に蘇生を受けずに離脱すると知見が減少</li>
+              <li>・知見が 0 を下回るとナレッジレベルが 1 下がる</li>
+              <li>・Lv.5 未満はデスペナなし</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ━━━ サポートジョブ獲得 ━━━ -->
+    <section id="sec-support" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        サポートジョブ獲得（クエスト進行分）
+      </h2>
+
+      <div class="section-card">
+        <p class="text-slate text-sm leading-relaxed mb-4">
+          「<span class="text-teal font-medium">使えない使い魔</span>」クリア後、アーカイブとの
+          「<span class="text-gold font-medium">サポートジョブの継承</span>」クエストが自動発生します。
+          ソウルシャードを受け取ることで以下の 3 ジョブが即時解放されます。
+        </p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ジョブ</th>
+              <th>解放タイミング</th>
+            </tr>
+          </thead>
+          <tbody>
+            {supportJobsFromQuest.map(j => (
+              <tr>
+                <td class="font-semibold">
+                  <span class="job-name-cell">
+                    <img src={crestIconUrl(j.id)} alt={j.name} class="job-crest-icon" style="filter:drop-shadow(0 0 3px rgba(212,175,55,0.5))" />
+                    <span class="text-moon">{j.name}</span>
+                  </span>
+                </td>
+                <td class="text-teal text-xs">{j.when}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="./support-jobs" class="text-xs text-teal/80 hover:text-teal transition-colors">サポートジョブ一覧を見る →</a>
+      </div>
+    </section>
+
+    </div><!-- /flex-1 -->
+    <aside class="hidden xl:block w-52 flex-shrink-0">
+      <TableOfContents client:visible items={tocItems} />
+    </aside>
+    </div><!-- /flex -->
+
+  </div>
+</BaseLayout>
+
+<style>
+  .job-name-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .job-crest-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+</style>

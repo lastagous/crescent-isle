@@ -1,0 +1,444 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MapViewer from '../../components/ui/MapViewer.svelte';
+import { itemIconUrl } from '../../data/items';
+
+// ─── データ出典 ────────────────────────────────────────────────────────────────
+// 銀箱座標: https://asellog.com/oc-treasure/
+// ドロップ率: https://game8.jp/ff14/696125
+// エーテライト: story.astro と同一データ
+// にんじん: carrots.astro と同一データ
+
+// ゲーム座標 → SVGピクセル変換
+// Map.csv: SizeFactor=100, OffsetX=0, OffsetY=0 → ゲーム座標範囲 1〜42
+// pixel = (gx - 1) / 41 * 800
+const g2p = (gx: number, gy: number) => ({
+  x: Math.round(((gx - 1) / 41) * 800),
+  y: Math.round(((gy - 1) / 41) * 800),
+});
+
+// ─── 銅箱（Copper Coffer）スポーン候補地点 ──────────────────────────────────
+// 座標: 色検出スクリプトによる自動抽出（2025/05/31 コミュニティ提供マップより）
+const copperChestData = [
+  { id: 'c1',  gx:  9.5, gy:  4.2 },
+  { id: 'c2',  gx:  6.7, gy:  6.8 },
+  { id: 'c3',  gx: 12.5, gy:  6.0 },
+  { id: 'c4',  gx: 29.2, gy:  6.7 },
+  { id: 'c5',  gx:  4.1, gy:  8.4 },
+  { id: 'c6',  gx: 19.1, gy:  7.6 },
+  { id: 'c7',  gx: 34.0, gy:  7.6 },
+  { id: 'c8',  gx:  8.3, gy:  9.7 },
+  { id: 'c9',  gx: 17.3, gy: 10.6 },
+  { id: 'c10', gx: 24.6, gy:  9.8 },
+  { id: 'c11', gx: 31.4, gy:  9.8 },
+  { id: 'c12', gx: 11.6, gy: 11.4 },
+  { id: 'c13', gx: 29.4, gy: 12.3 },
+  { id: 'c14', gx: 34.8, gy: 12.0 },
+  { id: 'c15', gx: 14.7, gy: 14.0 },
+  { id: 'c16', gx: 18.3, gy: 12.9 },
+  { id: 'c17', gx: 39.0, gy: 13.9 },
+  { id: 'c18', gx:  7.9, gy: 14.3 },
+  { id: 'c19', gx: 22.6, gy: 15.6 },
+  { id: 'c20', gx: 28.3, gy: 15.8 },
+  { id: 'c21', gx:  6.2, gy: 16.8 },
+  { id: 'c22', gx: 11.8, gy: 17.5 },
+  { id: 'c23', gx: 22.3, gy: 17.2 },
+  { id: 'c24', gx: 27.3, gy: 16.6 },
+  { id: 'c25', gx: 37.1, gy: 16.4 },
+  { id: 'c26', gx: 18.4, gy: 19.0 },
+  { id: 'c27', gx:  4.5, gy: 19.6 },
+  { id: 'c28', gx:  6.9, gy: 20.0 },
+  { id: 'c29', gx: 26.3, gy: 21.1 },
+  { id: 'c30', gx: 30.9, gy: 19.7 },
+  { id: 'c31', gx: 36.2, gy: 20.2 },
+  { id: 'c32', gx:  8.1, gy: 22.2 },
+  { id: 'c33', gx: 12.6, gy: 22.3 },
+  { id: 'c34', gx: 33.0, gy: 22.4 },
+  { id: 'c35', gx:  6.1, gy: 23.6 },
+  { id: 'c36', gx: 16.4, gy: 24.1 },
+  { id: 'c37', gx: 21.4, gy: 23.9 },
+  { id: 'c38', gx: 33.7, gy: 23.8 },
+  { id: 'c39', gx: 37.4, gy: 23.5 },
+  { id: 'c40', gx:  7.0, gy: 25.8 },
+  { id: 'c41', gx: 13.2, gy: 25.3 },
+  { id: 'c42', gx: 27.1, gy: 26.4 },
+  { id: 'c43', gx: 13.4, gy: 28.0 },
+  { id: 'c44', gx:  8.4, gy: 29.8 },
+  { id: 'c45', gx: 21.6, gy: 30.2 },
+  { id: 'c46', gx: 34.4, gy: 30.0 },
+  { id: 'c47', gx: 38.2, gy: 30.2 },
+  { id: 'c48', gx:  7.0, gy: 32.9 },
+  { id: 'c49', gx: 14.1, gy: 32.1 },
+  { id: 'c50', gx: 26.6, gy: 31.7 },
+  { id: 'c51', gx: 31.0, gy: 32.2 },
+  { id: 'c52', gx: 39.0, gy: 33.1 },
+  { id: 'c53', gx:  8.0, gy: 34.4 },
+  { id: 'c54', gx: 10.4, gy: 34.0 },
+  { id: 'c55', gx: 17.7, gy: 33.7 },
+  { id: 'c56', gx: 22.0, gy: 34.8 },
+  { id: 'c57', gx: 27.6, gy: 34.1 },
+  { id: 'c58', gx: 26.7, gy: 34.7 },
+  { id: 'c59', gx: 30.2, gy: 35.0 },
+  { id: 'c60', gx: 33.6, gy: 34.0 },
+  { id: 'c61', gx:  5.8, gy: 35.3 },
+  { id: 'c62', gx: 24.3, gy: 36.8 },
+  { id: 'c63', gx: 38.3, gy: 35.5 },
+  { id: 'c64', gx:  7.1, gy: 37.4 },
+  { id: 'c65', gx: 17.1, gy: 37.8 },
+];
+
+const copperMarkers = copperChestData.map((c, i) => ({
+  id: c.id,
+  label: '銅箱',
+  type: 'copper' as const,
+  desc: `(X:${c.gx} Y:${c.gy})`,
+  ...g2p(c.gx, c.gy),
+}));
+
+// ─── 銀箱（Silver Coffer）固定スポーン候補 9 箇所 ──────────────────────────
+// 座標: 色検出スクリプトによる自動抽出（2025/05/31 コミュニティ提供マップより）
+const silverChestData = [
+  { id: 's1', gx:  5.0, gy:  5.0 },
+  { id: 's3', gx:  5.3, gy: 15.1 },
+  { id: 's4', gx:  7.8, gy: 17.6 },
+  { id: 's5', gx: 37.0, gy: 18.8 },
+  { id: 's6', gx: 32.1, gy: 26.1 },
+  { id: 's7', gx: 15.8, gy: 28.8 },
+  { id: 's8', gx: 35.8, gy: 33.6 },
+  { id: 's9', gx:  8.7, gy: 35.7 },
+];
+
+const chestMarkers = silverChestData.map((c, i) => ({
+  id: c.id,
+  label: '銀箱',
+  type: 'chest' as const,
+  desc: `X:${c.gx} Y:${c.gy}`,
+  ...g2p(c.gx, c.gy),
+}));
+
+// ─── マジックポット宝箱スポーン ──────────────────────────────────────────────
+// 座標: 色検出スクリプトによる自動抽出（2025/05/31 コミュニティ提供マップより）
+const potMarkers = [
+  { id: 'p1',  gx: 14.7, gy:  4.3 },
+  { id: 'p2',  gx: 32.8, gy:  5.6 },
+  { id: 'p3',  gx: 10.8, gy:  8.4 },
+  { id: 'p4',  gx:  5.5, gy:  9.4 },
+  { id: 'p5',  gx: 10.5, gy: 15.3 },
+  { id: 'p6',  gx: 17.4, gy: 15.5 },
+  { id: 'p7',  gx: 37.7, gy: 14.2 },
+  { id: 'p8',  gx:  8.3, gy: 17.1 },
+  { id: 'p9',  gx:  6.3, gy: 18.0 },
+  { id: 'p10', gx:  8.5, gy: 19.9 },
+  { id: 'p11', gx: 11.9, gy: 19.5 },
+  { id: 'p12', gx: 15.3, gy: 20.7 },
+  { id: 'p13', gx: 38.9, gy: 19.4 },
+  { id: 'p14', gx: 12.2, gy: 21.6 },
+  { id: 'p15', gx: 15.2, gy: 22.8 },
+  { id: 'p16', gx: 23.6, gy: 24.3 },
+  { id: 'p17', gx: 27.7, gy: 22.9 },
+  { id: 'p18', gx: 15.1, gy: 25.6 },
+  { id: 'p19', gx: 28.3, gy: 25.2 },
+  { id: 'p20', gx: 26.2, gy: 28.1 },
+  { id: 'p21', gx: 20.2, gy: 29.6 },
+  { id: 'p22', gx: 18.4, gy: 30.3 },
+  { id: 'p23', gx: 30.0, gy: 33.0 },
+  { id: 'p24', gx:  3.8, gy: 35.6 },
+  { id: 'p25', gx:  4.7, gy: 36.9 },
+  { id: 'p26', gx:  7.0, gy: 35.2 },
+  { id: 'p27', gx: 21.6, gy: 35.3 },
+  { id: 'p28', gx:  6.8, gy: 38.2 },
+].map(p => ({ ...p, label: 'マジックポット', desc: `X:${p.gx} Y:${p.gy}`, type: 'pot' as const, ...g2p(p.gx, p.gy) }));
+
+// ─── にんじん採集ポイント ─────────────────────────────────────────────────────
+// 座標: 色検出スクリプトによる自動抽出（2025/05/31 コミュニティ提供マップより）
+const carrotMarkers = [
+  { id: 'r1',  gx: 11.6, gy:  6.6 },
+  { id: 'r2',  gx: 19.9, gy:  5.7 },
+  { id: 'r3',  gx:  5.8, gy:  7.8 },
+  { id: 'r4',  gx: 27.8, gy:  8.8 },
+  { id: 'r5',  gx:  6.0, gy:  9.8 },
+  { id: 'r6',  gx: 13.9, gy: 11.4 },
+  { id: 'r7',  gx:  7.1, gy: 12.5 },
+  { id: 'r8',  gx:  6.4, gy: 12.6 },
+  { id: 'r9',  gx: 10.3, gy: 14.3 },
+  { id: 'r10', gx: 38.5, gy: 17.2 },
+  { id: 'r11', gx: 37.9, gy: 18.7 },
+  { id: 'r12', gx:  4.4, gy: 20.0 },
+  { id: 'r13', gx: 38.9, gy: 19.9 },
+  { id: 'r14', gx:  4.9, gy: 23.2 },
+  { id: 'r15', gx:  6.6, gy: 23.3 },
+  { id: 'r16', gx: 18.2, gy: 23.5 },
+  { id: 'r17', gx: 30.9, gy: 24.4 },
+  { id: 'r18', gx: 34.2, gy: 24.3 },
+  { id: 'r19', gx: 13.5, gy: 25.3 },
+  { id: 'r20', gx:  7.0, gy: 28.1 },
+  { id: 'r21', gx: 35.8, gy: 27.0 },
+  { id: 'r22', gx: 26.9, gy: 33.0 },
+  { id: 'r23', gx: 30.6, gy: 32.6 },
+  { id: 'r24', gx: 36.7, gy: 32.3 },
+  { id: 'r25', gx: 10.0, gy: 35.1 },
+  { id: 'r26', gx:  7.7, gy: 35.6 },
+  { id: 'r27', gx:  7.8, gy: 36.8 },
+  { id: 'r28', gx: 11.6, gy: 38.6 },
+  { id: 'r29', gx: 16.0, gy: 38.5 },
+  { id: 'r30', gx: 20.8, gy: 38.0 },
+  { id: 'r31', gx: 26.3, gy: 37.6 },
+  { id: 'r32', gx: 38.3, gy: 37.2 },
+  { id: 'r33', gx:  5.3, gy: 39.2 },
+  { id: 'r34', gx: 29.5, gy: 38.7 },
+].map(c => ({ ...c, label: 'にんじん', desc: `X:${c.gx} Y:${c.gy}`, type: 'carrot' as const, ...g2p(c.gx, c.gy) }));
+
+// ─── エーテライト（魔道通路）──────────────────────────────────────────────────
+// 座標出典: consolegameswiki / ff14memo.com
+const aetheryteMarkers = [
+  { id: 'a1', gx: 38.1, gy:  7.5, name: '探査隊のベースキャンプ' },
+  { id: 'a2', gx: 18.0, gy:  9.2, name: 'さすらい人の安息地' },
+  { id: 'a3', gx: 14.3, gy: 19.0, name: '水晶の洞窟' },
+  { id: 'a4', gx: 13.7, gy: 27.0, name: '石の沼地' },
+  { id: 'a5', gx: 27.5, gy: 27.5, name: '古老の森' },
+].map(a => ({
+  id: a.id,
+  label: a.name,
+  type: 'aetheryte' as const,
+  desc: `X:${a.gx} Y:${a.gy}`,
+  ...g2p(a.gx, a.gy),
+}));
+
+// 全マーカー結合
+const allMarkers = [...chestMarkers, ...copperMarkers, ...potMarkers, ...carrotMarkers, ...aetheryteMarkers];
+
+// エリア名ラベル（マップ上に薄く表示）
+const areaLabels = [
+  { name: '蜃気楼の浜',  ...g2p(19,  8) },
+  { name: '南部丘陵',    ...g2p(30, 23) },
+  { name: '岩窟の裏町',  ...g2p( 9, 19) },
+  { name: '禁忌の廃都',  ...g2p(30, 35) },
+  { name: '古樹の湿原',  ...g2p(17, 36) },
+  { name: '円蓋の城塞',  ...g2p(33, 16) },
+];
+
+---
+
+<BaseLayout
+  title="宝箱の配置 | クレセントアイル | FF14"
+  description="FF14 クレセントアイル（パッチ 7.25）の宝箱（銀箱・銅箱）の位置と種類、にんじん採集ポイント、エーテライト位置をマップで確認できます。"
+>
+  <!-- Hero -->
+  <div class="page-hero">
+    <div class="container mx-auto px-4 pt-16 pb-8 relative z-10">
+      <h1 class="font-display text-4xl md:text-5xl text-moon-light">宝箱の配置</h1>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-12 max-w-6xl">
+
+
+    <!-- ━━━ マップ ━━━ -->
+    <section id="sec-map" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        クレセントアイル：南征編
+      </h2>
+      <MapViewer
+        client:visible
+        markers={allMarkers}
+        areaLabels={areaLabels}
+        mapWidth={800}
+        mapHeight={800}
+        mapAlt="クレセントアイル 宝箱・にんじん・エーテライト マップ"
+        mapSrc="/crescent-isle/maps/o6b1_01.png"
+        mapMaxHeight="640px"
+        showTimer={true}
+      />
+    </section>
+
+    <!-- ━━━ 宝箱の種類 ━━━ -->
+    <section id="sec-chests" class="mb-12">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        宝箱の種類
+      </h2>
+
+      <!-- 銀箱・銅箱 -->
+      <h3 class="chest-group-title">銀箱・銅箱</h3>
+      <p class="chest-group-note">出現条件：CE クリア（確定）/ FATE クリア（確率）/ ミミック 4 体以上討伐 / チェインマーク付きモブ 9 体以上討伐</p>
+      <div class="section-card overflow-x-auto mb-6">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>種類</th>
+              <th>ドロップ品</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-slate font-medium whitespace-nowrap">銅箱</td>
+              <td>
+                <ul class="drop-list">
+                  <li>白光のデミマテリア（45%）</li>
+                  <li>マジックプリズム：フライングリボン</li>
+                  <li>フォーチュンカロット（低確率）</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-blue-300 font-medium whitespace-nowrap">銀箱</td>
+              <td>
+                <ul class="drop-list">
+                  <li><img src={itemIconUrl(65119)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />十二都市銀貨 ×300</li>
+                  <li><img src={itemIconUrl(65118)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />金貨 ×480</li>
+                  <li>妖金糸</li>
+                  <li>マウント</li>
+                  <li>エモート</li>
+                  <li>ミニオン各種</li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- マジックポット -->
+      <h3 class="chest-group-title">マジックポット</h3>
+      <p class="chest-group-note">出現条件：おねだりポット FATE に Gold 貢献 → マジカルエリクサー入手 → 使用で宝箱に誘導（まれに財宝誘導が継続し 2 個目あり）</p>
+      <div class="section-card overflow-x-auto mb-6">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>種類</th>
+              <th>確率</th>
+              <th>ドロップ品</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-teal font-medium whitespace-nowrap">マジックポット銅箱</td>
+              <td class="text-slate/70 whitespace-nowrap">銅 約50%</td>
+              <td>
+                <ul class="drop-list">
+                  <li><img src={itemIconUrl(65119)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />十二都市銀貨 ×100【確定】</li>
+                  <li><img src={itemIconUrl(65118)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />金貨 ×160【確定】</li>
+                  <li>オメガマテリジャ / アルテマテリジャ ×1</li>
+                  <li>フォーチュンカロット</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-blue-300 font-medium whitespace-nowrap">マジックポット銀箱</td>
+              <td class="text-slate/70 whitespace-nowrap">銀 約40%</td>
+              <td>
+                <ul class="drop-list">
+                  <li><img src={itemIconUrl(65119)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />十二都市銀貨 ×300【確定】</li>
+                  <li><img src={itemIconUrl(65118)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />金貨 ×480【確定】</li>
+                  <li>オメガ / アルテママテリジャ ×1〜2</li>
+                  <li>妖金糸</li>
+                  <li>フォーチュンカロット</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-gold font-medium whitespace-nowrap">マジックポット金箱</td>
+              <td class="text-slate/70 whitespace-nowrap">金 約10%</td>
+              <td>
+                <ul class="drop-list">
+                  <li><img src={itemIconUrl(65119)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />十二都市銀貨 ×1000【確定】</li>
+                  <li><img src={itemIconUrl(65118)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />金貨 ×1600【確定】</li>
+                  <li><img src={itemIconUrl(65002)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />ギル ×30000【確定】</li>
+                  <li>オメガ / アルテママテリジャ ×1〜4</li>
+                  <li>くるっと回る</li>
+                  <li>レースパラソル</li>
+                  <li>クレセントマジリング</li>
+                  <li>妖金糸</li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- にんじん -->
+      <h3 class="chest-group-title">にんじん</h3>
+      <p class="chest-group-note">出現条件：かじられたにんじんにフォーチュンカロットを使用</p>
+      <div class="section-card overflow-x-auto mb-6">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>種類</th>
+              <th>ドロップ品</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-gold font-medium whitespace-nowrap">しあわせうさぎ金箱</td>
+              <td>
+                <ul class="drop-list">
+                  <li><img src={itemIconUrl(65119)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />十二都市銀貨 ×1000【確定】</li>
+                  <li><img src={itemIconUrl(65118)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />金貨 ×1600【確定】</li>
+                  <li><img src={itemIconUrl(65002)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />ギル ×200000【確定】</li>
+                  <li>オメガ / アルテママテリジャ</li>
+                  <li>クレセントマギ / マスターリング各種</li>
+                  <li>フォーチュンカロット</li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-4">
+        <a href="./fate" class="text-xs text-teal/80 hover:text-teal transition-colors">CE・FATE 一覧を見る →</a>
+        <a href="./support-jobs" class="text-xs text-teal/80 hover:text-teal transition-colors">サポートジョブ一覧を見る →</a>
+      </div>
+    </section>
+
+
+
+  </div>
+</BaseLayout>
+
+<style>
+  .chest-group-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #5eead4;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+    margin-top: 0;
+  }
+  .chest-group-note {
+    font-size: 0.7rem;
+    color: #6b8aad;
+    margin-bottom: 0.75rem;
+    margin-top: 0;
+  }
+  .drop-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .drop-list li {
+    font-size: 0.75rem;
+    color: #8aa8d0;
+    padding-left: 0.9rem;
+    position: relative;
+  }
+  .drop-list li::before {
+    content: '·';
+    position: absolute;
+    left: 0.2rem;
+    color: #2dd4bf;
+  }
+  .group-header-row th {
+    background: rgba(45,212,191,0.07);
+    color: #5eead4;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.35rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(45,212,191,0.15);
+  }
+</style>

@@ -1,0 +1,918 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import TocObserver from '../../components/ui/TocObserver.svelte';
+import { TOMES } from '../../data/tomes';
+import { itemIconUrl, ITEM_ICONS } from '../../data/items';
+
+// ─── サポートジョブ一覧 ─────────────────────────────────────────────────────
+const supportJobs = [
+  { job: 'シーフ',       icon: 'thief',      req: '×2〜4 必須',      role: '全道中のトラップ探知・鍵開け・バフ剥がし' },
+  { job: '風水士',       icon: 'geomancer',  req: '×2〜3 必須',      role: '全道中の帯電床通過・プリント起動' },
+  { job: '時魔道士',     icon: 'timemage',   req: '×2〜4 必須',      role: '1ボス・道中2の詠唱遅延・デスペル' },
+  { job: '吟遊詩人',     icon: 'bard',       req: '×2〜6 必須',      role: '2ボス・3ボスのスプライト凍結' },
+  { job: 'ナイト',       icon: 'knight',     req: '各PTY ×1 必須',   role: '全ボスの全体軽減・砲台ポジション' },
+  { job: 'バーサーカー', icon: 'berserker',  req: '全体 ×1 必須',    role: '4ボスの紫コンデュイット専用破壊' },
+  { job: '薬師',         icon: 'chemist',    req: '各PTY ×1 必須',   role: '全区間の唯一の蘇生源' },
+  { job: '狩人',         icon: 'ranger',     req: '各PTY ×1 推奨',   role: '道中1・2ボスのトラップ処理・軽減' },
+  { job: '砲撃士',       icon: 'cannoneer',  req: '推奨',             role: '1ボス・道中3の即死・脆弱スタック' },
+  { job: '侍',           icon: 'samurai',    req: '推奨',             role: '1ボス・道中3の即死・物理回避' },
+  { job: '予言士',       icon: 'oracle',     req: '任意',             role: '道中3のガーディアン遅延即死' },
+];
+
+// ─── 参考動画データ（イディル式 / ぬけまる準拠） ────────────────────────────
+// ※ YouTube動画ID を各 videoId に入力してください
+const videos = {
+  boss1:  { title: 'フォークタワー 1ボス デモンズタブレット解説【ぬけまる】', videoId: 'VQGiyw7tuYo', channel: 'ぬけまるG', url: 'https://nukemarugames.com/' },
+  trash1: { title: 'フォークタワー 道中1解説【ぬけまる】',                    videoId: '',             channel: 'ぬけまるG', url: 'https://nukemarugames.com/' },
+  boss2:  { title: 'フォークタワー 2ボス デッドスターズ解説【ぬけまる】',     videoId: 'e3c7veLHTXI', channel: 'ぬけまるG', url: 'https://nukemarugames.com/' },
+  trash2: { title: 'フォークタワー 道中2解説【犬丸のぞみ】',                  videoId: '3F1D-aEYA0E', channel: '犬丸のぞみ', url: 'https://www.youtube.com/@inumaru_nozomi' },
+  boss3:  { title: 'フォークタワー 3ボス マーブルドラゴン解説【ぬけまる】',   videoId: 'HvySz9r8mNM', channel: 'ぬけまるG', url: 'https://nukemarugames.com/' },
+  trash3: { title: 'フォークタワー 道中3解説【犬丸のぞみ】',                  videoId: 'ynE_fiRsFnM', channel: '犬丸のぞみ', url: 'https://www.youtube.com/@inumaru_nozomi' },
+  boss4:  { title: 'フォークタワー 4ボス マギタウロス解説【ぬけまる】',        videoId: 'Z55g6ARpbJ0', channel: 'ぬけまるG', url: 'https://nukemarugames.com/' },
+};
+---
+
+<BaseLayout
+  title="フォークタワー：力の塔 攻略ガイド（イディル式）| クレセントアイル | FF14"
+  description="FF14 クレセントアイルのフォークタワー：力の塔をイディル式で徹底解説。入場方法・4ボス全ギミック・散開図・サポートジョブ・タイムライン・報酬まで網羅。"
+>
+  <!-- Hero -->
+  <div class="page-hero">
+    <div class="container mx-auto px-4 pt-16 pb-8 relative z-10">
+      <h1 class="font-display text-4xl md:text-5xl text-moon-light">
+        フォークタワー：<span class="text-crimson">力の塔</span>
+      </h1>
+      <p class="text-xs text-slate mt-2">イディル式（野良標準）準拠</p>
+    </div>
+  </div>
+
+  <!-- Page body -->
+  <div class="container mx-auto px-4 py-10 max-w-6xl">
+
+    <!-- 2カラムレイアウト -->
+    <div class="tower-layout">
+
+      <!-- ── メインコンテンツ ─────────────────────────────────────────── -->
+      <div class="tower-main">
+
+        <!-- ═══ 入場・概要 ══════════════════════════════════════════════ -->
+        <section id="entry" class="section-card mb-8 border-teal">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">入場条件と蜃気楼ルール</h2>
+          <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <h3 class="subsection-label">入場フロー</h3>
+              <ol class="space-y-1.5 text-xs text-slate leading-relaxed list-decimal list-inside">
+                <li>遠征古物商で「<img src={itemIconUrl(65121)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />魔紋起動証：力の塔」を購入（銀貨・金貨で入手）</li>
+                <li>外部 Discord 等で48名の編成を組む</li>
+                <li>天候「蜃気楼」の発生を確認（空が赤紫色に変化）</li>
+                <li>フィールド中央「静寂の東屋」近くの遺物殿で証を供託</li>
+                <li>24名以上が供託するとエーテリアルノード起動 → 入場可能</li>
+                <li>48名超の場合は抽選（供託数多い順で優先）</li>
+              </ol>
+            </div>
+            <div>
+              <h3 class="subsection-label">蜃気楼タイマー</h3>
+              <ul class="space-y-1.5 text-xs text-slate leading-relaxed">
+                <li>インスタンス生成から <strong class="text-moon-light">5分後</strong>（24名以上在線時）に初回発動</li>
+                <li>通常リスポーンタイマー: <strong class="text-moon-light">60分</strong></li>
+                <li>CE クリアごとに <strong class="text-teal">−5分</strong> 短縮</li>
+                <li>FATE クリアごとに <strong class="text-teal">−1分</strong> 短縮</li>
+                <li>天候ウィンドウは約 <strong class="text-moon-light">5分間</strong></li>
+              </ul>
+              <h3 class="subsection-label mt-4">全滅ペナルティ</h3>
+              <ul class="space-y-1.5 text-xs text-slate leading-relaxed">
+                <li>レベルダウン（CE 1回 + FATE 1〜2回程度で回復）</li>
+                <li>蘇生は <strong class="text-crimson">薬師のそせいのみ</strong>（通常レイズ系は機能しない）</li>
+                <li>蘇生スタック ×3 → 0で以降蘇生不可</li>
+                <li>ギミックミス刻印 3回 = 即死（死の宣告）</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ スタートルーム ══════════════════════════════════════════ -->
+        <section id="start" class="tower-section mb-8">
+          <div class="ts-header prep-header">
+            <div class="ts-title-group">
+              <span class="ts-badge badge-prep">準備</span>
+              <h2 class="ts-title">スタートルーム — イディル式ウェイマーク・ジョブ確認</h2>
+            </div>
+          </div>
+          <div class="ts-body">
+            <h4>入場後の流れ</h4>
+            <ul>
+              <li>ここを出た瞬間に「デューティー・アズ・アサインド」デバフ付与 → <span class="warn">以降サポートジョブ変更不可</span></li>
+              <li>各アライアンス（A/B/C）でウェイマーク共有・役割確認を行う</li>
+            </ul>
+            <h4>イディル式 アライアンス割り当て（全ボス共通基準）</h4>
+            <div class="marker-table-wrap">
+              <table class="marker-table">
+                <thead><tr><th>アライアンス</th><th>カラー</th><th>担当</th><th>ウェイマーク</th></tr></thead>
+                <tbody>
+                  <tr><td>アライアンス 1（文字班 A）</td><td><span class="dot dot-a"></span>北西</td><td>北西ルート / A島</td><td>A マーカー</td></tr>
+                  <tr><td>アライアンス 2（文字班 B）</td><td><span class="dot dot-b"></span>北東</td><td>北東ルート / B島</td><td>B マーカー</td></tr>
+                  <tr><td>アライアンス 3（数字班 C）</td><td><span class="dot dot-c"></span>南</td><td>南ルート / C島</td><td>C マーカー</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <h4>必須ジョブ数（48名編成の目安）</h4>
+            <ul>
+              <li><strong>シーフ</strong> ×2〜4 — 左右ルート各1人以上。トラップ感知・錠前・武器強奪</li>
+              <li><strong>風水士</strong> ×2〜3 — ふゆうで帯電床通過・たたかいのベル起動</li>
+              <li><strong>時魔道士</strong> ×2〜4 — 1ボスから必須。マギ・デスペル / マギ・スロウガ</li>
+              <li><strong>吟遊詩人</strong> ×2〜6 — あいのうた（2ボス後・3ボスで必須）</li>
+              <li><strong>ナイト</strong> 各アライアンス ×1 — まもり（全体軽減）・4ボス砲台担当</li>
+              <li><strong>バーサーカー</strong> 全体 ×1 — 4ボス紫コンデュイット破壊専任</li>
+              <li><strong>薬師</strong> 各アライアンス ×1 — そせいがない班は機能停止リスクあり</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- ═══ ボス1 ══════════════════════════════════════════════════ -->
+        <section id="boss1" class="tower-section mb-8">
+          <div class="ts-header boss-header">
+            <div class="ts-title-group">
+              <span class="ts-badge badge-boss">Boss 1</span>
+              <h2 class="ts-title">デモンズタブレット</h2>
+            </div>
+          </div>
+          <div class="ts-body">
+
+            <h4>必須サポートジョブ</h4>
+            <div class="job-chips">
+              <span class="job-chip req"><img src="/icons/support-jobs/timemage.png" class="job-chip-icon" alt="" />時魔道士 ×2</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/knight.png" class="job-chip-icon" alt="" />ナイト 各PTY ×1</span>
+              <span class="job-chip rec"><img src="/icons/support-jobs/cannoneer.png" class="job-chip-icon" alt="" />砲撃士 推奨</span>
+              <span class="job-chip rec"><img src="/icons/support-jobs/samurai.png" class="job-chip-icon" alt="" />侍 推奨</span>
+            </div>
+
+            <h4>マーカー配置（イディル式）</h4>
+            <ul>
+              <li>南北 3塔ずつ、計 6塔 の位置に <strong>A/B/C/1/2/3</strong> マーカーを配置</li>
+              <li>担当: アライアンス1 → 前左塔、アライアンス2 → 後中塔、アライアンス3 → 前右塔（南北対称）</li>
+              <li><strong>開幕LB推奨:</strong> キャスター LB2 を開幕前に押す（LB2 = 5秒前）</li>
+            </ul>
+
+            <h4>ギミック詳細</h4>
+            <ul>
+              <li><strong>デモンズダーラ</strong> — 開幕魔法全体攻撃。軽減・バリア必須</li>
+              <li><strong>排斥式 / 圧潰式 ダークレイ</strong> — 「排斥式」= ボスから離れる。「圧潰式」= ボスへ近づく。フィールド半分が安置</li>
+              <li><strong>グリフマギア</strong> — ヘイスト上位 3名へのタンクバスター。他プレイヤーはクリーヴ範囲外へ</li>
+              <li><strong>排斥式 / 圧潰式 デモンズグリフ</strong> — 南北に 3塔ずつ計 6塔出現、各塔に 4名ずつ入る（計 24名）。不足時は爆発 → <span class="warn">デバフ付与</span></li>
+              <li><strong>レフト / ライトターン</strong> — ボスの詠唱方向と<span class="tip">逆方向</span>へ移動。90°回転 ×2 後に即死ビーム</li>
+              <li><strong>排斥式 / 圧潰式 デモンズコメテオ</strong> — メテオマーカー付きプレイヤーはフィールド端へ移動して AoE 捨て</li>
+              <li><strong>召喚（雑魚フェーズ）</strong> — サモンド・デーモン / アーチ・デーモン 出現。防御バフあり → <strong>マギ・デスペル で必ず解除してから攻撃</strong></li>
+            </ul>
+
+            <h4>タイムライン</h4>
+            <ol class="timeline">
+              <li><span class="tl-t">00:00</span> デモンズダーラ（全体）</li>
+              <li><span class="tl-t">〜:XX</span> ダークレイ（離/近）</li>
+              <li><span class="tl-t">〜:XX</span> デモンズグリフ（6塔）</li>
+              <li><span class="tl-t">〜:XX</span> グリフマギア（タンクバスター）</li>
+              <li><span class="tl-t">〜:XX</span> レフト/ライトターン → 即死ビーム</li>
+              <li><span class="tl-t">〜:XX</span> デモンズコメテオ（メテオ捨て）</li>
+              <li><span class="tl-t">〜:XX</span> 召喚（雑魚 + デスペル）</li>
+              <li><span class="tl-t">6:40</span> <span class="warn">エンレイジ エンド・オブ・ヒストリー</span></li>
+            </ol>
+
+            <h4>参考動画</h4>
+            {videos.boss1.videoId ? (
+              <div class="video-grid">
+                <a href={`https://www.youtube.com/watch?v=${videos.boss1.videoId}`} class="video-card" target="_blank" rel="noopener">
+                  <img src={`https://img.youtube.com/vi/${videos.boss1.videoId}/hqdefault.jpg`} alt={videos.boss1.title} class="video-thumb" loading="lazy" />
+                  <div class="video-info"><div class="video-title">{videos.boss1.title}</div><div class="video-ch">{videos.boss1.channel}</div></div>
+                </a>
+              </div>
+            ) : (
+              <div class="ref-links">
+                <a href="https://game8.jp/ff14/698605" class="ref-link" target="_blank" rel="noopener">game8 1ボス詳細攻略</a>
+                <a href={videos.boss1.url} class="ref-link" target="_blank" rel="noopener">ぬけまるG 攻略ブログ</a>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <!-- ═══ 道中1 ════════════════════════════════════════════════ -->
+        <section id="trash1" class="tower-section mb-8">
+          <div class="ts-header trash-header">
+            <div class="ts-title-group">
+              <span class="ts-badge badge-trash">道中 1</span>
+              <h2 class="ts-title">トラップ回廊</h2>
+            </div>
+          </div>
+          <div class="ts-body">
+
+            <h4>必須サポートジョブ</h4>
+            <div class="job-chips">
+              <span class="job-chip req"><img src="/icons/support-jobs/thief.png" class="job-chip-icon" alt="" />シーフ 左右各 ×1（先頭必須）</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/geomancer.png" class="job-chip-icon" alt="" />風水士 ×1〜2</span>
+              <span class="job-chip rec"><img src="/icons/support-jobs/ranger.png" class="job-chip-icon" alt="" />狩人 推奨（遠隔トラップ処理）</span>
+            </div>
+
+            <h4>進行概要</h4>
+            <ul>
+              <li>アライアンス 1/2/3 が左・中央・右ルートを同時進行</li>
+              <li>シーフが先頭でトラップ探知。帯電床は風水士の <strong>ふゆう</strong> で安全通過</li>
+              <li><span class="warn">ダッシュ技使用禁止</span>（トラップ起動に繋がる）</li>
+            </ul>
+
+            <h4>トラップ種別</h4>
+            <ul>
+              <li><strong>通常トラップ</strong> — 爆発（近接死亡）。狩人の マギ・ファルコン で遠隔解除可。タンク無敵カバーも可</li>
+              <li><strong>不安定（スーパー）トラップ</strong> — 広域大爆発。全員後退後にタンク無敵でのみ安全処理</li>
+              <li><strong>帯電床</strong> — 踏むと即死＋出血。ふゆう か タンク無敵で突破</li>
+              <li><strong>緑オーブ</strong> — 近接 AoE ＋ 60秒サイレンス（解除不可）。魔法使いは絶対近づかない</li>
+            </ul>
+
+            <h4>主要敵</h4>
+            <ul>
+              <li><strong>タワー・マンティコア</strong> — 左/右ハンマー（180°扇）×2。1発目が遅く2発目が反転速攻。予測回避必要</li>
+              <li><strong>タワー・スカラブ</strong> — ライノ・ガードバフ（回避率上昇）付き。<strong>マギ・デスペル で解除してから攻撃</strong></li>
+            </ul>
+
+            <h4>参考動画</h4>
+            {videos.trash1.videoId ? (
+              <div class="video-grid">
+                <a href={`https://www.youtube.com/watch?v=${videos.trash1.videoId}`} class="video-card" target="_blank" rel="noopener">
+                  <img src={`https://img.youtube.com/vi/${videos.trash1.videoId}/hqdefault.jpg`} alt={videos.trash1.title} class="video-thumb" loading="lazy" />
+                  <div class="video-info"><div class="video-title">{videos.trash1.title}</div><div class="video-ch">{videos.trash1.channel}</div></div>
+                </a>
+              </div>
+            ) : (
+              <div class="ref-links">
+                <a href={videos.trash1.url} class="ref-link" target="_blank" rel="noopener">ぬけまるG 攻略ブログ</a>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <!-- ═══ ボス2 ══════════════════════════════════════════════════ -->
+        <section id="boss2" class="tower-section mb-8">
+          <div class="ts-header boss-header">
+            <div class="ts-title-group">
+              <span class="ts-badge badge-boss">Boss 2</span>
+              <h2 class="ts-title">デッドスターズ</h2>
+            </div>
+          </div>
+          <div class="ts-body">
+
+            <h4>必須サポートジョブ</h4>
+            <div class="job-chips">
+              <span class="job-chip req"><img src="/icons/support-jobs/thief.png" class="job-chip-icon" alt="" />シーフ（ぶきをぬすむ）</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/geomancer.png" class="job-chip-icon" alt="" />風水士（ふゆう）</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/ranger.png" class="job-chip-icon" alt="" />狩人 各PTY ×1</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/bard.png" class="job-chip-icon" alt="" />吟遊詩人 ×2以上（あいのうた）</span>
+            </div>
+
+            <h4>マーカー配置・担当振り分け（イディル式）</h4>
+            <div class="marker-table-wrap">
+              <table class="marker-table">
+                <thead><tr><th>ボス</th><th>属性</th><th>位置</th><th>担当</th></tr></thead>
+                <tbody>
+                  <tr><td>フォーボス</td><td><span class="dot dot-green"></span>緑</td><td>SW（南西）</td><td>アライアンス 1（A/1）</td></tr>
+                  <tr><td>トライトン</td><td><span class="dot dot-red"></span>赤</td><td>N（北）</td><td>アライアンス 2（B/2）</td></tr>
+                  <tr><td>ネレゲイド</td><td><span class="dot dot-blue"></span>青</td><td>SE（南東）</td><td>アライアンス 3（C/3）</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <ul>
+              <li>「決戦」詠唱中に各ボスに1人でも当てられた属性デバフが付くと、そのボスにしかダメージを与えられなくなる → <span class="warn">誤ボスへの攻撃厳禁</span></li>
+            </ul>
+
+            <h4>ギミック詳細</h4>
+            <ul>
+              <li><strong>サテライトコンビネーション 1（スライム）</strong> — フォーボスが無敵化、残2体がスライム化。<span class="tip">自分に付いたデバフ色と反対色</span>のスライム AoE に乗って相殺。未相殺は即死</li>
+              <li><strong>リベンジファイガ / リベンジブリザガ</strong> — 飛翔した2体から超巨大扇範囲。<span class="tip">飛んだ方向が安置</span></li>
+              <li><strong>デルタアタック</strong> — 魔法全体攻撃。バリアヒーラー・シールド必須</li>
+              <li><strong>重火砲（ヘビーアーティレリー）</strong> — 頭割り。外周方向へビームが飛ぶよう位置取り</li>
+              <li><strong>サテライトコンビネーション 2（雪玉）— <span class="warn">最難関ギミック</span></strong><br/>
+                ネレゲイドが無敵化、残2体が雪玉化。直線頭割り（距離減衰）。<br/>
+                距離減衰ライン担当の PC はボスから遠い方向に配置 → ノックバック後に頭割り発生。<br/>
+                <span class="warn">人数不足で47人全滅</span>する最大の事故ポイント</li>
+              <li><strong>サテライトコンビネーション 3（ファイアボール）</strong> — トライトンが無敵化、残2体がファイアボール化。塔処理と扇 AoE の同時対処。スプリント推奨</li>
+              <li><strong>取っ組み合い / とばっちり</strong> — 扇 AoE ＋ 散らばった小円。ロール別散開</li>
+              <li><strong>フュージョン・バースト</strong> — エンレイジ</li>
+            </ul>
+
+            <h4>タイムライン</h4>
+            <ol class="timeline">
+              <li><span class="tl-t">00:00</span> 三体登場 / 決戦（全体）</li>
+              <li><span class="tl-t">〜:XX</span> サテコン1（スライム・逆色踏み）</li>
+              <li><span class="tl-t">〜:XX</span> リベンジファイガ / ブリザガ</li>
+              <li><span class="tl-t">〜:XX</span> デルタアタック</li>
+              <li><span class="tl-t">〜:XX</span> <span class="warn">サテコン2（雪玉頭割り）最難関</span></li>
+              <li><span class="tl-t">〜:XX</span> サテコン3（ファイアボール塔）</li>
+              <li><span class="tl-t">7:00</span> <span class="warn">エンレイジ フュージョン・バースト</span></li>
+            </ol>
+
+            <h4>参考動画</h4>
+            {videos.boss2.videoId ? (
+              <div class="video-grid">
+                <a href={`https://www.youtube.com/watch?v=${videos.boss2.videoId}`} class="video-card" target="_blank" rel="noopener">
+                  <img src={`https://img.youtube.com/vi/${videos.boss2.videoId}/hqdefault.jpg`} alt={videos.boss2.title} class="video-thumb" loading="lazy" />
+                  <div class="video-info"><div class="video-title">{videos.boss2.title}</div><div class="video-ch">{videos.boss2.channel}</div></div>
+                </a>
+              </div>
+            ) : (
+              <div class="ref-links">
+                <a href="https://game8.jp/ff14/701228" class="ref-link" target="_blank" rel="noopener">game8 2ボス詳細攻略</a>
+                <a href={videos.boss2.url} class="ref-link" target="_blank" rel="noopener">ぬけまるG 攻略ブログ</a>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <!-- ═══ 道中2 ════════════════════════════════════════════════ -->
+        <section id="trash2" class="tower-section mb-8">
+          <div class="ts-header trash-header">
+            <div class="ts-title-group">
+              <span class="ts-badge badge-trash">道中 2</span>
+              <h2 class="ts-title">ブリッジ区画</h2>
+            </div>
+          </div>
+          <div class="ts-body">
+
+            <h4>必須サポートジョブ</h4>
+            <div class="job-chips">
+              <span class="job-chip req"><img src="/icons/support-jobs/thief.png" class="job-chip-icon" alt="" />シーフ（トラップ）</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/geomancer.png" class="job-chip-icon" alt="" />風水士（ふゆう）</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/bard.png" class="job-chip-icon" alt="" />吟遊詩人 ×2以上（ウェーブ3）</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/timemage.png" class="job-chip-icon" alt="" />時魔道士（デスペル / ウェーブ2）</span>
+            </div>
+
+            <h4>全体概要</h4>
+            <ul>
+              <li>左右 2ルートに分かれて 5ウェーブを進行。<span class="warn">ダッシュ技厳禁</span></li>
+              <li>炎の床が前方から迫る（1ヒット 約40,000 ダメージ / バーンズスタック）</li>
+              <li><strong>アルカン・スピア</strong>（ウェーブ1・2・5）— 4列が点灯 → ラインスタック。前衛タンクにピアシング・レジスタンス・ダウン → ローテーション必須。侍の しらはどり 回避も可</li>
+            </ul>
+
+            <h4>ウェーブ内容</h4>
+            <ul>
+              <li><strong>ウェーブ1</strong> — タワー・ブート / タワー・ボギー。ブートが パライズIII 詠唱 → 割り込みで止める</li>
+              <li><strong>ウェーブ2</strong> — エーテリアル・ワード ＋ タワー・アビス。アビスに デンス・ダークネス バフ → <span class="warn">マギ・デスペル 必須</span>。未解除でディフューズ・ダークネス全滅</li>
+              <li><strong>ウェーブ3（最重要）</strong> — タワー・アイドル ×6 が アンシェント・エアロIII 同時詠唱 → <strong>吟遊詩人のあいのうたで全員が詠唱を始めたタイミングに一斉フリーズ</strong>。並行して風水士がふゆうで帯電床を渡りトラップ・コントロール・プリントを起動</li>
+              <li><strong>ウェーブ4</strong> — ボギー / ブート ＋ 不安定トラップ（中央）・通常トラップ（ランダム）。風水士が隣の班側の穴埋め</li>
+              <li><strong>ウェーブ5</strong> — タワー・プロジェニター（青）＋ プロジェニトリクス（橙）のペア。<br/>
+                クロース・コール（青テザー・外向き矢印）= 近づくと爆発 → <span class="tip">離れて対処</span><br/>
+                ファー・クライ（緑テザー・内向き矢印）= 遠距離で爆発 → <span class="tip">近づいて対処</span><br/>
+                <strong>ボムシェル・ドロップ</strong> — 足元へ向かうラバボム 2体を時間内に破壊。片方討伐 → 12秒で即もう片方を討伐</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- ═══ ボス3 ══════════════════════════════════════════════════ -->
+        <section id="boss3" class="tower-section mb-8">
+          <div class="ts-header boss-header">
+            <div class="ts-title-group">
+              <span class="ts-badge badge-boss">Boss 3</span>
+              <h2 class="ts-title">マーブルドラゴン</h2>
+            </div>
+          </div>
+          <div class="ts-body">
+
+            <h4>必須サポートジョブ</h4>
+            <div class="job-chips">
+              <span class="job-chip req"><img src="/icons/support-jobs/bard.png" class="job-chip-icon" alt="" />吟遊詩人 ×2以上（アイス・スプライト凍結）</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/knight.png" class="job-chip-icon" alt="" />ナイト 各PTY ×1</span>
+              <span class="job-chip rec"><img src="/icons/support-jobs/ranger.png" class="job-chip-icon" alt="" />狩人 推奨</span>
+            </div>
+
+            <h4>マーカー配置（イディル式）</h4>
+            <ul>
+              <li>塔割り: <strong>1A（赤）・2B（黄）・3C（青）・4D（紫）</strong></li>
+              <li>配置: A/D 北、1–2–3 上段、A–B–C 下段</li>
+            </ul>
+
+            <h4>フェーズ構成</h4>
+            <ul>
+              <li><strong>フェーズ1 — イミテイトレイン（氷柱）</strong>: 棘付き水円 ×4 ＋ 通常水円 ×4。イミテイト・アイシクル（氷円 ×2）と接触で凍結チェーン。安全側を判断してから ドラゴニックムーブ（90°前後扇 AoE）回避</li>
+              <li><strong>フェーズ2 — イミテイトレイン（竜巻）</strong>: フリジッド・ツイスター（氷竜巻 ×2）が時計/反時計回転。水たまりと干渉しながら AoE 回避</li>
+              <li><strong>フェーズ3 — アドフェーズ</strong>: ボスが無敵化。アイス・ゴーレム ×6 出現 → タンクが各自の壁方向へ誘導。ゴーレム生存中の フローズン・ハート → タンク無敵で受ける。<br/>
+                フリジッド・ダイブ で 2タワーを氷結 → 各アライアンスが担当タワーを踏む<br/>
+                ボス再出現（無敵付き）→ <strong>アイス・スプライト ×6</strong> が外周からボスへ向かって移動。<span class="tip">あいのうたで全フリーズ</span>させてボスへ到達させない → ライフレス・レガシーが致死でなくなる</li>
+              <li><strong>フェーズ4 — ウィキッド・ウォーター</strong>: 12名に ウィキッド・ウォーター ＋ スロットル デバフ付与 → 最終氷 AoE に<span class="tip">意図的に当たって</span> ジェリッド・ジェイル（氷牢）化 → 残りプレイヤーが即座に氷牢を破壊</li>
+              <li><strong>フェーズ5 — 最終複合フェーズ</strong>: イミテイトレイン 10円（東西 or 南北が棘）＋ フリジッド・ツイスター。各アライアンスが担当タワーを 2回踏む。イミテイト・スター ＋ ドレッド・デリュージュ 後に エンレイジ</li>
+            </ul>
+
+            <h4>タイムライン</h4>
+            <ol class="timeline">
+              <li><span class="tl-t">00:00</span> イミテイトスター（全体）</li>
+              <li><span class="tl-t">〜:XX</span> フェーズ1 イミテイトレイン（氷柱）+ ドラゴニックムーブ</li>
+              <li><span class="tl-t">〜:XX</span> フェーズ2 イミテイトレイン（竜巻）</li>
+              <li><span class="tl-t">〜:XX</span> フェーズ3 アドフェーズ（ゴーレム → アイス・スプライト）</li>
+              <li><span class="tl-t">〜:XX</span> フェーズ4 ウィキッド・ウォーター（氷牢）</li>
+              <li><span class="tl-t">〜:XX</span> フェーズ5 最終複合</li>
+              <li><span class="tl-t">6:30</span> <span class="warn">エンレイジ ライフレス・レガシー</span></li>
+            </ol>
+
+            <h4>参考動画</h4>
+            {videos.boss3.videoId ? (
+              <div class="video-grid">
+                <a href={`https://www.youtube.com/watch?v=${videos.boss3.videoId}`} class="video-card" target="_blank" rel="noopener">
+                  <img src={`https://img.youtube.com/vi/${videos.boss3.videoId}/hqdefault.jpg`} alt={videos.boss3.title} class="video-thumb" loading="lazy" />
+                  <div class="video-info"><div class="video-title">{videos.boss3.title}</div><div class="video-ch">{videos.boss3.channel}</div></div>
+                </a>
+              </div>
+            ) : (
+              <div class="ref-links">
+                <a href="https://game8.jp/ff14/705425" class="ref-link" target="_blank" rel="noopener">game8 3ボス詳細攻略</a>
+                <a href={videos.boss3.url} class="ref-link" target="_blank" rel="noopener">ぬけまるG 攻略ブログ</a>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <!-- ═══ 道中3 ════════════════════════════════════════════════ -->
+        <section id="trash3" class="tower-section mb-8">
+          <div class="ts-header trash-header">
+            <div class="ts-title-group">
+              <span class="ts-badge badge-trash">道中 3</span>
+              <h2 class="ts-title">バインディングロック</h2>
+            </div>
+          </div>
+          <div class="ts-body">
+
+            <h4>必須サポートジョブ</h4>
+            <div class="job-chips">
+              <span class="job-chip req"><img src="/icons/support-jobs/thief.png" class="job-chip-icon" alt="" />シーフ（かぎあけ・ぶきをぬすむ）</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/timemage.png" class="job-chip-icon" alt="" />時魔道士（デスペル）</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/cannoneer.png" class="job-chip-icon" alt="" />砲撃士 / 予言士 / 侍（即死系）</span>
+            </div>
+
+            <h4>進行概要</h4>
+            <ul>
+              <li>6つのサイドルームを含むトラップ迷路。通常トラップ 14個 ＋ 不安定トラップ 4個が配置</li>
+              <li>初手: ガーディアン・ペトログリフ（即死耐性）＋ タワー・ヒポケルフ ＋ タワー・スカテネ ＋ タワー・マロリスを処理してからサイドルームへ</li>
+              <li>シリンダーギミック: 部屋種別（ゴーレム / バーサーカー / ライト / バット / ウェポン / ナイト）。<br/>中央の機械柱を確認し、指定人数が床に乗る。シリンダー操作の詠唱はスタンで止める</li>
+            </ul>
+
+            <h4>サイドルームのガーディアン</h4>
+            <ul>
+              <li><strong>ガーディアン・レイス（SW）</strong> — スクリーム（予兆なし広域 AoE ＋ テラー/移動不可）。テラー中に リンガリング・レゼントメント → レスキューで引き剥がす</li>
+              <li><strong>ガーディアン・バーサーカー（W）</strong> — 強力なオートアタック。<span class="tip">ほうげき / しのせんこく / いあいぬき で瞬殺</span></li>
+              <li><strong>ガーディアン・ゴーレム（NW）</strong> — トキシック・ミネラルズ → ドゥーム付与。ポーションで即解除</li>
+              <li><strong>ガーディアン・ナイト（NE）</strong> — インヴィンシビリティ バフ → <strong>マギ・デスペル 必須</strong>。解除前にバスター・ナックルズが当たると無敵再付与</li>
+              <li><strong>ガーディアン・バット ×3（E）</strong> — 固有回避率。侍の ぜになげ / 狩人の ねらう / リミットブレイクで対処</li>
+              <li><strong>ガーディアン・ウェポン（経路上）</strong> — アームド・トゥ・ザ・ティース バフ → シーフの <strong>ぶきをぬすむ</strong> で解除</li>
+            </ul>
+
+            <h4>秘密の錠前部屋（オプション）</h4>
+            <ul>
+              <li>シーフの かぎあけ で開錠。追加スポイルコファーあり</li>
+              <li>ハーミットオブパワー（外部出現） — 撃破で魔石ボーナス</li>
+            </ul>
+
+            <h4>サンギュイン・リクルース（オプションボス）</h4>
+            <ul>
+              <li>サイドルーム全クリア後に出現。討伐で参加者全員に <span class="tip">サンギュイナイト ×2</span> ＋ 最終ボスクリア時にボーナスコファー +5</li>
+              <li>タルタリアン・フレイム（ドーナツ AoE）/ タルタリアン・サンダー（近接 AoE）/ クリプトコール（正面扇 ＋ 解除可ドゥーム）</li>
+            </ul>
+
+            <h4>参考動画</h4>
+            {videos.trash3.videoId ? (
+              <div class="video-grid">
+                <a href={`https://www.youtube.com/watch?v=${videos.trash3.videoId}`} class="video-card" target="_blank" rel="noopener">
+                  <img src={`https://img.youtube.com/vi/${videos.trash3.videoId}/hqdefault.jpg`} alt={videos.trash3.title} class="video-thumb" loading="lazy" />
+                  <div class="video-info"><div class="video-title">{videos.trash3.title}</div><div class="video-ch">{videos.trash3.channel}</div></div>
+                </a>
+              </div>
+            ) : (
+              <div class="ref-links">
+                <a href={videos.trash3.url} class="ref-link" target="_blank" rel="noopener">ぬけまるG 攻略ブログ</a>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <!-- ═══ ボス4（最終） ════════════════════════════════════════ -->
+        <section id="boss4" class="tower-section mb-8">
+          <div class="ts-header final-header">
+            <div class="ts-title-group">
+              <span class="ts-badge badge-final">Final Boss</span>
+              <h2 class="ts-title">マギタウロス</h2>
+            </div>
+          </div>
+          <div class="ts-body">
+
+            <h4>必須サポートジョブ</h4>
+            <div class="job-chips">
+              <span class="job-chip req"><img src="/icons/support-jobs/knight.png" class="job-chip-icon" alt="" />ナイト 各PTY ×1（砲台ポジション）</span>
+              <span class="job-chip req"><img src="/icons/support-jobs/berserker.png" class="job-chip-icon" alt="" />バーサーカー 全体 ×1（紫コンデュイット専任）</span>
+              <span class="job-chip rec"><img src="/icons/support-jobs/cannoneer.png" class="job-chip-icon" alt="" />砲撃士 推奨</span>
+            </div>
+
+            <h4>マーカー配置・島割り（イディル式）</h4>
+            <div class="marker-table-wrap">
+              <table class="marker-table">
+                <thead><tr><th>島</th><th>位置</th><th>担当</th><th>ウェイマーク</th></tr></thead>
+                <tbody>
+                  <tr><td>A 島</td><td>北西</td><td>アライアンス 1</td><td>A マーカー</td></tr>
+                  <tr><td>B 島</td><td>北東</td><td>アライアンス 2</td><td>B マーカー</td></tr>
+                  <tr><td>C 島</td><td>南</td><td>アライアンス 3</td><td>C マーカー</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <ul>
+              <li>攻撃は島の辺に当たると外・内に伝搬 → <span class="warn">大円デバフを島の辺に捨てると他アライアンスが全滅</span></li>
+            </ul>
+
+            <h4>コンデュイット（Conduit）システム</h4>
+            <ul>
+              <li><strong>黄色（斧）コンデュイット</strong> — 斧フェーズ中に破壊 → 次の オーラ・バースト を無害化</li>
+              <li><strong>青色（槍）コンデュイット</strong> — 槍フェーズ中に破壊 → 次の ホーリー を無害化</li>
+              <li><span class="warn"><strong>紫色（ユニバーサル）コンデュイット</strong></span> — <strong>バーサーカーの あばれる のみ破壊可</strong>。通常攻撃でヒットすると ヒステリア（ライン状全体 AoE ＋ 行動不能）が発動</li>
+            </ul>
+
+            <h4>ギミック詳細</h4>
+            <ul>
+              <li><strong>封印開放</strong> — 斧（黄）= 近い 2人がターゲットサークル内・他は外へ。槍（青）= 遠い 2人が外・他は内へ</li>
+              <li><strong>アサシンズ・ダガー</strong> — Y字形直線 AoE が時計回り回転。Y字（英字マーカー通過）vs 逆Y字（数字マーカー通過）の 2パターン。難パターンは回転中に後退</li>
+              <li><strong>フォーク・フューリー</strong> — 島ごとの最近 / 最遠プレイヤーへの強攻撃。武器種に応じて内外タンクポジション</li>
+              <li><strong>オーラ・バースト（黄）/ ホーリー（青）</strong> — 即死ギミック。<strong>黄 = 黄コンデュイット破壊・青 = 青コンデュイット破壊</strong> で威力軽減。紫コンデュイットはバーサーカーのあばれるのみ</li>
+              <li><strong>賢者の杖</strong> — 杖 ×3 が出現し最近接プレイヤーへラインスタック。<strong>1A・2B・3C</strong> 割り当て。クリティカル AoE 回避後に中央集合</li>
+              <li><strong>ルーン・アクス</strong> — 小円 / 大円デバフ 3名付与。小円 = 島中央へ捨て。大円 = 外周端のみ（島の辺厳禁）</li>
+              <li><strong>ホーリー・ランス</strong> — 12本の槍が時間差 AoE。1/5/9本目 = 外周、2–4本目 = B島、6–8本目 = C島、10–12本目 = A島。B床は1本目後、C床は5本目後、A床は9本目後に外へ</li>
+            </ul>
+
+            <h4>タイムライン</h4>
+            <ol class="timeline">
+              <li><span class="tl-t">00:00</span> アンシール・オーラ（全体）</li>
+              <li><span class="tl-t">〜:XX</span> 封印開放（斧/槍）+ アサシンズ・ダガー</li>
+              <li><span class="tl-t">〜:XX</span> フォーク・フューリー（タンクバスター）</li>
+              <li><span class="tl-t">〜:XX</span> ルーン・アクス → 黄/紫コンデュイット破壊</li>
+              <li><span class="tl-t">〜:XX</span> オーラ・バースト → 賢者の杖</li>
+              <li><span class="tl-t">〜:XX</span> ホーリー・ランス → 青/紫コンデュイット破壊</li>
+              <li><span class="tl-t">8:00</span> <span class="warn">エンレイジ</span></li>
+            </ol>
+
+            <h4>参考動画</h4>
+            {videos.boss4.videoId ? (
+              <div class="video-grid">
+                <a href={`https://www.youtube.com/watch?v=${videos.boss4.videoId}`} class="video-card" target="_blank" rel="noopener">
+                  <img src={`https://img.youtube.com/vi/${videos.boss4.videoId}/hqdefault.jpg`} alt={videos.boss4.title} class="video-thumb" loading="lazy" />
+                  <div class="video-info"><div class="video-title">{videos.boss4.title}</div><div class="video-ch">{videos.boss4.channel}</div></div>
+                </a>
+              </div>
+            ) : (
+              <div class="ref-links">
+                <a href="https://game8.jp/ff14/706046" class="ref-link" target="_blank" rel="noopener">game8 4ボス詳細攻略</a>
+                <a href={videos.boss4.url} class="ref-link" target="_blank" rel="noopener">ぬけまるG 攻略ブログ</a>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <!-- ═══ サポートジョブ全体表 ════════════════════════════════ -->
+        <section id="support-jobs" class="section-card mb-8">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">サポートジョブ 推奨構成</h2>
+          <ul class="support-job-list">
+            {supportJobs.map(j => (
+              <li class="sj-row">
+                <img src={`/icons/support-jobs/${j.icon}.png`} alt="" class="sj-icon" />
+                <span class="sj-job">{j.job}</span>
+                <span class={`sj-req ${j.req.includes('必須') ? 'req' : 'rec'}`}>{j.req}</span>
+                <span class="sj-role">{j.role}</span>
+              </li>
+            ))}
+          </ul>
+          <p class="text-xs text-slate mt-3">※ 構成はイディル式（野良標準）に基づく。</p>
+        </section>
+
+        <!-- ═══ 報酬 ════════════════════════════════════════════════ -->
+        <section id="rewards" class="section-card mb-8">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">報酬（全クリア時）</h2>
+          <div class="overflow-x-auto mb-4">
+            <table class="data-table">
+              <thead>
+                <tr><th>報酬</th><th>数量</th></tr>
+              </thead>
+              <tbody>
+                {[
+                  { item: TOMES.latest,         qty: '×80' },
+                  { item: TOMES.secondLatest,   qty: '×40' },
+                  { item: '十二都市銀貨',        qty: '×800' },
+                  { item: 'サンギュイナイト（スポイルコファー、各×2）', qty: '複数個散在' },
+                  { item: 'サンギュイナイト（サンギュイン・リクルース撃破ボーナス）', qty: '+2（参加者全員）' },
+                  { item: 'オカルトレコード #26〜#30', qty: '各ボス討伐・探索ポイントから' },
+                ].map(r => (
+                  <tr>
+                    <td class="text-moon-light text-sm">{ITEM_ICONS[r.item] !== undefined && <img src={itemIconUrl(ITEM_ICONS[r.item])} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />}{r.item}</td>
+                    <td class="text-teal text-sm font-mono">{r.qty}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <h3 class="text-sm font-semibold text-moon-dim mb-3">サンギュイナイト 交換アイテム（遠征古物商）</h3>
+          <div class="grid sm:grid-cols-3 gap-3 text-xs text-slate">
+            <div class="ft-reward-card">
+              <div class="text-moon-light font-medium mb-1">X-フィクサティブ</div>
+              <div>10 サンギュイナイト / アルカナウト装備を +1 → +2 にアップグレード（1部位に6個 = 60 サンギュイナイト）</div>
+            </div>
+            <div class="ft-reward-card">
+              <div class="text-moon-light font-medium mb-1">全装備アップグレード</div>
+              <div>約 300 サンギュイナイト（フルセット）</div>
+            </div>
+            <div class="ft-reward-card">
+              <div class="text-gold font-medium mb-1">ペタロドゥスホイッスル</div>
+              <div>99 サンギュイナイト</div>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /.tower-main -->
+
+      <!-- ── 右サイドバー TOC ────────────────────────────────────── -->
+      <aside class="tower-toc">
+        <div class="toc-inner">
+          <p class="toc-label">目次</p>
+          <nav class="toc-route">
+            <a href="#entry"        class="toc-item toc-info">入場・概要</a>
+            <a href="#start"        class="toc-item toc-prep">スタートルーム</a>
+            <div class="toc-divider"></div>
+            <a href="#boss1"        class="toc-item toc-boss">Boss 1 デモンズタブレット</a>
+            <a href="#trash1"       class="toc-item toc-trash">道中1 トラップ回廊</a>
+            <a href="#boss2"        class="toc-item toc-boss">Boss 2 デッドスターズ</a>
+            <a href="#trash2"       class="toc-item toc-trash">道中2 ブリッジ区画</a>
+            <a href="#boss3"        class="toc-item toc-boss">Boss 3 マーブルドラゴン</a>
+            <a href="#trash3"       class="toc-item toc-trash">道中3 バインディングロック</a>
+            <a href="#boss4"        class="toc-item toc-final">Final マギタウロス</a>
+            <div class="toc-divider"></div>
+            <a href="#support-jobs" class="toc-item toc-info">サポートジョブ</a>
+            <a href="#rewards"      class="toc-item toc-info">報酬</a>
+          </nav>
+        </div>
+      </aside>
+
+    </div><!-- /.tower-layout -->
+  </div>
+
+  <TocObserver client:idle />
+</BaseLayout>
+
+<style>
+  /* ─── 2カラムレイアウト ───────────────────────────────────────────────── */
+  .tower-layout {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+  .tower-main { flex: 1; min-width: 0; }
+
+  /* ─── セクション共通 ─────────────────────────────────────────────────── */
+  .tower-section {
+    background: rgba(10, 20, 37, 0.7);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+  .ts-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .boss-header  { background: rgba(244, 63,  94, 0.08); border-bottom-color: rgba(244,63,94,0.2);  }
+  .trash-header { background: rgba(245,158, 11, 0.07); border-bottom-color: rgba(245,158,11,0.2); }
+  .prep-header  { background: rgba( 99,102,241, 0.07); border-bottom-color: rgba(99,102,241,0.2); }
+  .final-header { background: rgba(220, 38, 38, 0.12); border-bottom-color: rgba(220,38,38,0.3);  }
+
+  .ts-title-group {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .ts-title {
+    font-family: var(--font-display, sans-serif);
+    font-size: 1rem;
+    font-weight: 700;
+    color: #e2ecff;
+    line-height: 1.3;
+  }
+  .ts-sub {
+    font-size: 0.72rem;
+    color: #6b8aad;
+    font-weight: 400;
+  }
+  .ts-badge {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 0.3rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge-boss  { background: rgba(244,63,94,0.18);  color: #fca5a5; border: 1px solid rgba(244,63,94,0.4);  }
+  .badge-trash { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.35);}
+  .badge-prep  { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.35);}
+  .badge-final { background: rgba(220,38,38,0.2);   color: #fca5a5; border: 1px solid rgba(220,38,38,0.5);  }
+
+  .ts-body { padding: 1rem 1.25rem; }
+  .ts-body h4 {
+    color: #8aa8d0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin: 1rem 0 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .ts-body h4:first-child { margin-top: 0; }
+  .ts-body ul  { padding-left: 1.2rem; margin: 0; }
+  .ts-body li  { color: #c8d8f0; font-size: 0.82rem; line-height: 1.65; }
+  .ts-body li strong { color: #e2ecff; }
+  .warn { color: #f87171; font-weight: 700; }
+  .tip  { color: #fbbf24; font-weight: 700; }
+
+  /* ─── 必須ジョブチップ ───────────────────────────────────────────────── */
+  .job-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+  .job-chip {
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .job-chip { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .job-chip.req { background: rgba(244,63,94,0.15); color: #fca5a5; border: 1px solid rgba(244,63,94,0.35); }
+  .job-chip.rec { background: rgba(45,212,191,0.10); color: #5eead4; border: 1px solid rgba(45,212,191,0.25); }
+  .job-chip-icon { height: 1.1rem; width: auto; flex-shrink: 0; image-rendering: pixelated; }
+
+  /* ─── サポートジョブリスト ──────────────────────────────────────────────── */
+  .support-job-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+  .sj-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; }
+  .sj-icon { height: 1.6rem; width: auto; image-rendering: pixelated; flex-shrink: 0; }
+  .sj-job { color: #e2e8f0; font-weight: 600; white-space: nowrap; min-width: 5rem; }
+  .sj-req { font-weight: 600; white-space: nowrap; min-width: 10rem; }
+  .sj-req.req { color: #fca5a5; }
+  .sj-req.rec { color: #5eead4; }
+  .sj-role { color: #94a3b8; }
+
+  /* ─── マーカーテーブル ───────────────────────────────────────────────── */
+  .marker-table-wrap { overflow-x: auto; margin-bottom: 0.5rem; }
+  .marker-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+  }
+  .marker-table th {
+    background: rgba(255,255,255,0.05);
+    color: #6b8aad;
+    font-weight: 600;
+    padding: 0.3rem 0.6rem;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .marker-table td {
+    color: #c8d8f0;
+    padding: 0.3rem 0.6rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+  .dot-a     { background: #60a5fa; }
+  .dot-b     { background: #fbbf24; }
+  .dot-c     { background: #a78bfa; }
+  .dot-green { background: #4ade80; }
+  .dot-red   { background: #f87171; }
+  .dot-blue  { background: #60a5fa; }
+
+  /* ─── タイムライン ───────────────────────────────────────────────────── */
+  .timeline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-left: 2px solid rgba(45,212,191,0.2);
+    padding-left: 0.75rem;
+  }
+  .timeline li {
+    color: #c8d8f0;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    padding: 0.15rem 0;
+    position: relative;
+  }
+  .timeline li::before {
+    content: '';
+    position: absolute;
+    left: -0.85rem;
+    top: 0.5rem;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(45,212,191,0.5);
+  }
+  .tl-t {
+    display: inline-block;
+    min-width: 3rem;
+    color: #2dd4bf;
+    font-family: monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  /* ─── 動画カード ─────────────────────────────────────────────────────── */
+  .video-grid { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.25rem; }
+  .video-card {
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(10,20,37,0.8);
+    text-decoration: none;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .video-card:hover { border-color: rgba(45,212,191,0.4); transform: translateY(-2px); }
+  .video-thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+  .video-info { padding: 0.4rem 0.5rem; }
+  .video-title { font-size: 0.7rem; color: #c8d8f0; line-height: 1.4; }
+  .video-ch { font-size: 0.65rem; color: #6b8aad; margin-top: 0.2rem; }
+
+  /* ─── 参照リンク（動画IDなし時） ───────────────────────────────────── */
+  .ref-links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem; }
+  .ref-link {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border: 1px solid rgba(45,212,191,0.3);
+    border-radius: 0.375rem;
+    font-size: 0.72rem;
+    color: #2dd4bf;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .ref-link:hover { background: rgba(45,212,191,0.08); }
+
+  /* ─── セクション見出し（section-card 内） ────────────────────────── */
+  .section-heading {
+    font-family: var(--font-display, sans-serif);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  .info-heading { color: #c8d8f0; }
+  .subsection-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #6b8aad;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.5rem;
+  }
+
+  /* ─── 報酬カード ─────────────────────────────────────────────────────── */
+  .ft-reward-card {
+    background: rgba(10,20,37,0.6);
+    border: 1px solid rgba(45,212,191,0.15);
+    border-radius: 0.5rem;
+    padding: 0.65rem 0.875rem;
+  }
+
+  /* ─── 右サイドバー TOC ──────────────────────────────────────────────── */
+  .tower-toc {
+    width: 13rem;
+    flex-shrink: 0;
+    position: sticky;
+    top: 5rem;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+  }
+  .toc-inner { padding: 0.75rem; background: rgba(10,20,37,0.6); border: 1px solid rgba(255,255,255,0.07); border-radius: 0.75rem; }
+  .toc-label { font-size: 0.65rem; font-weight: 700; color: #6b8aad; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; padding: 0 0.25rem; }
+  .toc-route { display: flex; flex-direction: column; gap: 0.1rem; }
+  .toc-item {
+    display: block;
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.72rem;
+    color: #6b8aad;
+    text-decoration: none;
+    transition: color 0.15s, background 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .toc-item:hover { color: #c8d8f0; background: rgba(255,255,255,0.04); }
+  .toc-item.active { color: #e2ecff; background: rgba(255,255,255,0.06); }
+  .toc-info.active  { border-left-color: #2dd4bf; }
+  .toc-prep.active  { border-left-color: #818cf8; }
+  .toc-boss.active  { border-left-color: #f43f5e; }
+  .toc-trash.active { border-left-color: #f59e0b; }
+  .toc-final.active { border-left-color: #dc2626; }
+  .toc-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 0.35rem 0.25rem; }
+
+  /* ─── レスポンシブ ───────────────────────────────────────────────────── */
+  @media (max-width: 1023px) {
+    .tower-layout { flex-direction: column; }
+    .tower-toc { width: 100%; position: static; max-height: none; }
+    .toc-route { flex-direction: row; flex-wrap: wrap; }
+  }
+</style>

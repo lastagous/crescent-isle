@@ -1,0 +1,128 @@
+---
+import Header from '../components/layout/Header.svelte';
+import Footer from '../components/layout/Footer.astro';
+import '../styles/global.css';
+
+export interface Props {
+  title: string;
+  description: string;
+  ogImage?: string;
+  ogType?: string;
+}
+
+const {
+  title,
+  description,
+  ogImage = '/crescent-isle-guide/og-default.png',
+  ogType = 'website',
+} = Astro.props;
+
+const siteUrl   = 'https://lastagous.github.io/crescent-isle';
+const canonical = new URL(Astro.url.pathname, siteUrl).href;
+---
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0f1e" />
+  <link rel="canonical" href={canonical} />
+
+  <!-- SEO -->
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <meta name="robots" content="index, follow" />
+  <meta name="keywords" content="FF14, FFXIV, クレセントアイル, 攻略, ガイド, Final Fantasy XIV" />
+
+  <!-- OGP -->
+  <meta property="og:type"        content={ogType} />
+  <meta property="og:url"         content={canonical} />
+  <meta property="og:title"       content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:image"       content={`${siteUrl}${ogImage}`} />
+  <meta property="og:locale"      content="ja_JP" />
+  <meta property="og:site_name"   content="クレセントアイル攻略ガイド" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image"       content={`${siteUrl}${ogImage}`} />
+
+  <!-- Favicon (emoji SVG) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌙</text></svg>" />
+
+  <!-- Preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- Material Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "クレセントアイル攻略ガイド",
+    "url": siteUrl,
+    "description": "FF14 クレセントアイルの総合攻略ガイド",
+    "inLanguage": "ja",
+  })} />
+</head>
+
+<body>
+  <!-- Stars background decoration -->
+  <div class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
+    <div class="star-field"></div>
+  </div>
+
+  <Header client:load />
+
+  <main class="pt-16 min-h-screen">
+    <slot />
+  </main>
+
+  <Footer />
+
+  <!-- Lodestone ツールチップ（eorzeadb_link クラスのリンクにホバーで装備情報を表示） -->
+  <script src="https://img.finalfantasyxiv.com/lds/pc/global/js/eorzeadb/loader.js?v2" is:inline></script>
+</body>
+</html>
+
+<style is:global>
+  /* Tailwind の box-sizing: border-box とツールチップの競合を回避 */
+  #eorzeadb_tooltip {
+    overflow: visible !important;
+    box-sizing: content-box !important;
+  }
+  #eorzeadb_tooltip div {
+    box-sizing: content-box !important;
+  }
+  /* eorzeadb_link のスタイル */
+  a.eorzeadb_link {
+    color: var(--color-moon);
+    text-decoration: none;
+  }
+  a.eorzeadb_link:hover {
+    color: var(--color-teal);
+    text-decoration: underline;
+  }
+</style>
+
+<style is:global>
+  .star-field {
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, rgba(200,216,240,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 50%, rgba(200,216,240,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 50% 15%, rgba(200,216,240,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 70%, rgba(200,216,240,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 30%, rgba(200,216,240,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 20% 80%, rgba(200,216,240,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 90%, rgba(200,216,240,0.3) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 60% 40%, rgba(45,212,191,0.3) 0%, transparent 100%);
+    opacity: 0.7;
+  }
+</style>

@@ -1,0 +1,369 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MapViewer from '../../components/ui/MapViewer.svelte';
+import { itemIconUrl } from '../../data/items';
+
+// ゲーム座標 → SVGピクセル変換（Map SizeFactor=100, OffsetX=0, OffsetY=0 → 範囲 1〜42）
+const g2p = (gx: number, gy: number) => ({
+  x: Math.round(((gx - 1) / 41) * 800),
+  y: Math.round(((gy - 1) / 41) * 800),
+});
+
+// ─── 通常FATE マーカー ───────────────────────────────────────────────────────
+const fateMarkers = [
+  { id: 'f1',  gx: 14.1, gy: 34.5, label: '湿度の狩手「ディヒューミディファイア」', desc: 'X:14.1 Y:34.5' },
+  { id: 'f2',  gx: 20.1, gy: 32.7, label: '監視の瞳「アイルオブザーバー」',         desc: 'X:20.1 Y:32.7' },
+  { id: 'f3',  gx: 17.0, gy: 22.3, label: '神罰の石獣「シジフォス」',               desc: 'X:17.0 Y:22.3' },
+  { id: 'f4',  gx: 20.6, gy: 15.1, label: '進化せし怪蛇「アドバンスドエイビス」',   desc: 'X:20.6 Y:15.1' },
+  { id: 'f5',  gx: 22.9, gy: 27.0, label: '美しき呪殺者「イグゼクレーター」',       desc: 'X:22.9 Y:27.0' },
+  { id: 'f6',  gx: 17.0, gy: 26.5, label: '悲鳴の蒐集者「ロプロス」',               desc: 'X:17.0 Y:26.5' },
+  { id: 'f7',  gx: 24.6, gy: 34.8, label: '波起こしの海魔「ナンム」',               desc: 'X:24.6 Y:34.8' },
+  { id: 'f8',  gx: 29.6, gy: 21.0, label: '命の収奪者「ライフギャザラー」',         desc: 'X:29.6 Y:21.0' },
+  { id: 'f9',  gx:  9.5, gy: 27.9, label: '土壌の守り手「マッドマッド」',           desc: 'X:9.5 Y:27.9'  },
+  { id: 'f10', gx: 28.8, gy: 31.2, label: '金色の怪石「ゴールデンブロックス」',     desc: 'X:28.8 Y:31.2' },
+  { id: 'f11', gx: 10.4, gy:  9.7, label: '甲板の掃除人「巨大鳥」',                 desc: 'X:10.4 Y:9.7'  },
+].map(f => ({ ...f, type: 'fate' as const, ...g2p(f.gx, f.gy) }));
+
+// ─── ポットFATE マーカー ─────────────────────────────────────────────────────
+const fatePotMarkers = [
+  { id: 'fp1', gx: 25.6, gy: 17.1, label: 'しあわせのマジックポット', desc: 'X:25.6 Y:17.1' },
+  { id: 'fp2', gx: 11.9, gy: 32.0, label: 'カチカチのマジックポット', desc: 'X:11.9 Y:32.0' },
+].map(f => ({ ...f, type: 'fate_pot' as const, ...g2p(f.gx, f.gy) }));
+
+// ─── CE マーカー（単体ボス） ──────────────────────────────────────────────────
+const ceMarkers = [
+  { id: 'ce1',  gx: 14.5, gy: 37.5, label: '封印大妖「クロイスターデーモン」',           desc: 'X:14.5 Y:37.5' },
+  { id: 'ce3',  gx: 35.1, gy: 32.2, label: '忍び寄る爪「デスクロー」',                   desc: 'X:35.1 Y:32.2' },
+  { id: 'ce4',  gx: 22.9, gy: 10.5, label: '呪いの商亀「コイントートス」',               desc: 'X:22.9 Y:10.5' },
+  { id: 'ce5',  gx: 38.8, gy: 24.9, label: '復元された獅子像「リペアドライオン」',       desc: 'X:38.8 Y:24.9' },
+  { id: 'ce6',  gx: 10.1, gy: 18.2, label: '昏き篝火「ヒンキーパンク」',                 desc: 'X:10.1 Y:18.2' },
+  { id: 'ce7',  gx:  5.5, gy: 26.4, label: '神秘の偶像「ミシカルアイドル」',             desc: 'X:5.5 Y:26.4'  },
+  { id: 'ce8',  gx: 30.5, gy: 14.1, label: '鳥嫌いの巨獣「ネオガルラ」',                 desc: 'X:30.5 Y:14.1' },
+  { id: 'ce9',  gx: 34.0, gy: 20.0, label: '二足の獅子「ランパントライオン」',           desc: 'X:34.0 Y:20.0' },
+  { id: 'ce10', gx: 27.4, gy: 35.9, label: '脳髄愛好家「マインドフレイア」',             desc: 'X:27.4 Y:35.9' },
+  { id: 'ce11', gx: 19.1, gy:  4.5, label: '伝説の鮫「ニーム・ペタロドゥス」',           desc: 'X:19.1 Y:4.5'  },
+  { id: 'ce13', gx: 33.9, gy: 37.5, label: '怒れる人造人間「クレセント・バーサーカー」', desc: 'X:33.9 Y:37.5' },
+  { id: 'ce14', gx: 13.0, gy: 22.8, label: '模造されしもの「水晶竜」',                   desc: 'X:13.0 Y:22.8' },
+  { id: 'ce15', gx: 14.5, gy:  9.2, label: 'セキュリティ・コマンドー',                   desc: 'X:14.5 Y:9.2'  },
+].map(c => ({ ...c, type: 'ce' as const, ...g2p(c.gx, c.gy) }));
+
+// ─── CE マーカー（複数敵） ────────────────────────────────────────────────────
+const ceMultiMarkers = [
+  { id: 'ce2',  gx: 35.0, gy: 16.1, label: '石造りの守護騎士たち', desc: 'X:35.0 Y:16.1' },
+  { id: 'ce12', gx: 30.5, gy: 28.6, label: '黒の連隊',         desc: 'X:30.5 Y:28.6' },
+].map(c => ({ ...c, type: 'ce_multi' as const, ...g2p(c.gx, c.gy) }));
+
+// ─── エーテライト マーカー ────────────────────────────────────────────────────
+const aetheryteMarkers = [
+  { id: 'a1', gx: 38.1, gy:  7.5, label: '探査隊のベースキャンプ' },
+  { id: 'a2', gx: 18.0, gy:  9.2, label: 'さすらい人の安息地' },
+  { id: 'a3', gx: 14.3, gy: 19.0, label: '水晶の洞窟' },
+  { id: 'a4', gx: 13.7, gy: 27.0, label: '石の沼地' },
+  { id: 'a5', gx: 27.5, gy: 27.5, label: '古老の森' },
+].map(a => ({ ...a, type: 'aetheryte' as const, desc: `X:${a.gx} Y:${a.gy}`, ...g2p(a.gx, a.gy) }));
+
+const allMarkers = [...fateMarkers, ...fatePotMarkers, ...ceMarkers, ...ceMultiMarkers, ...aetheryteMarkers];
+
+// ─── ゾーンオーバーレイ（デミアートマ色分け） ─────────────────────────────────
+// 6ゾーンは完全非重複・全域カバー。主要共有頂点:
+//   C(620,240): 橙/紫/黄の三重点
+//   A(265,370): 橙/緑/黄の三重点
+//   F(360,420): 緑/黄境界
+//   G(315,450): 緑/黄境界
+//   H(200,510): 緑/黄/蒼の三重点
+//   E(600,550): 黄/紫/青の三重点
+//   T(340,555): 黄/蒼/青の三重点
+//
+// ゾーン割り当て根拠（ユーザー指定）:
+//   青晶: アイルオブザーバー(373,618)、ナンム(461,661)、ゴールデンブロックス(541,590)等
+//   黄晶: ネオガルラ(575,256)、黒の連隊(575,539)、ロプロス(314,497)等
+//   緑晶: ヒンキーパンク(178,336)、シジフォス(314,418)、水晶竜(235,427)等
+//   蒼晶: マッドマッド(166,525)、ディヒューミディファイア(254,654)等
+const zones = [
+  { id: 'realgar',       color: '#fb923c', label: '橙晶のデミアートマ', icon: '/icons/demiatma/realgar.png',
+    points: '0,0 800,0 800,210 620,240 430,295 265,370 0,220',
+    labelPos: { x: 100, y: 90 } },
+  { id: 'caput_mortuum', color: '#c084fc', label: '紫晶のデミアートマ', icon: '/icons/demiatma/caput_mortuum.png',
+    points: '800,210 800,550 600,550 545,390 620,240',
+    labelPos: { x: 760, y: 320 } },
+  { id: 'malachite',     color: '#4ade80', label: '緑晶のデミアートマ', icon: '/icons/demiatma/malachite.png',
+    points: '0,220 265,370 360,420 315,450 200,510 0,515',
+    labelPos: { x: 70, y: 440 } },
+  { id: 'orpiment',      color: '#fbbf24', label: '黄晶のデミアートマ', icon: '/icons/demiatma/orpiment.png',
+    points: '265,370 430,295 620,240 545,390 600,550 340,555 200,510 315,450 360,420',
+    labelPos: { x: 480, y: 430 } },
+  { id: 'verdigris',     color: '#2dd4bf', label: '蒼晶のデミアートマ', icon: '/icons/demiatma/verdigris.png',
+    points: '0,515 200,510 340,555 320,800 0,800',
+    labelPos: { x: 80, y: 720 } },
+  { id: 'azurite',       color: '#60a5fa', label: '青晶のデミアートマ', icon: '/icons/demiatma/azurite.png',
+    points: '340,555 600,550 800,550 800,800 320,800',
+    labelPos: { x: 720, y: 750 } },
+];
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+const crestIconUrl = (id: string) => `${BASE}/icons/support-jobs/crests/${id}.png`;
+
+function dropIcon(name: string): string | null {
+  if (name.includes('碧晶')) return '/icons/demiatma/verdigris.png';
+  if (name.includes('青晶')) return '/icons/demiatma/azurite.png';
+  if (name.includes('緑晶')) return '/icons/demiatma/malachite.png';
+  if (name.includes('橙晶')) return '/icons/demiatma/realgar.png';
+  if (name.includes('紫晶')) return '/icons/demiatma/caput_mortuum.png';
+  if (name.includes('黄晶')) return '/icons/demiatma/orpiment.png';
+  if (name.includes('イヤリング'))   return `${BASE}/icons/gear/055562.png`;
+  if (name.includes('ネックレス'))   return `${BASE}/icons/gear/055107.png`;
+  if (name.includes('ブレスレット')) return `${BASE}/icons/gear/055905.png`;
+  if (name.includes('ソウルシャード'))                               return '/icons/shard/026681.png';
+  if (name.includes('探査記録'))  return itemIconUrl(26603);
+  if (name.includes('オラクル')  || name.includes('予言士'))   return `${BASE}/icons/support-jobs/crests/oracle.png`;
+  if (name.includes('レンジャー') || name.includes('狩人'))    return `${BASE}/icons/support-jobs/crests/ranger.png`;
+  if (name.includes('バーサーカー'))                           return `${BASE}/icons/support-jobs/crests/berserker.png`;
+  return null;
+}
+
+const phantomJobs = [
+  { id: 'oracle',    name: '予言士',       shard: '予言士のソウルシャード',       ce: '二足の獅子「ランパントライオン」' },
+  { id: 'ranger',    name: '狩人',         shard: '狩人のソウルシャード',         ce: '黒の連隊' },
+  { id: 'berserker', name: 'バーサーカー', shard: 'バーサーカーのソウルシャード', ce: '怒れる人造人間「クレセント・バーサーカー」' },
+];
+
+// ─── CE 一覧テーブルデータ ─────────────────────────────────────────────────────
+// アクセサリー（イヤリング/ネックレス/ブレスレット）は gear.astro の CE別ドロップ部位に準拠。
+// ファイター系・ソーサラー系どちらが落ちるかはランダム。
+type CeRow = { name: string; auto: boolean; prereq: string; pos: string; drops: string[] };
+const ceTable: CeRow[] = [
+  { name: '封印大妖「クロイスターデーモン」',           auto: false, prereq: 'クレセント・インクステイン（KL20）を (X:13.0 Y:35.0) 付近で討伐', pos: 'X:14.5 Y:37.5', drops: ['碧晶のデミアートマ', 'ヴォイドセント・コントラクト', 'クレセントマギ イヤリング（ファイター/ソーサラー）'] },
+  { name: '石造りの守護騎士たち',                      auto: true,  prereq: '',                                                               pos: 'X:35.0 Y:16.1', drops: ['紫晶のデミアートマ', 'クレセントマギ ネックレス（ファイター/ソーサラー）'] },
+  { name: '忍び寄る爪「デスクロー」',                  auto: true,  prereq: '',                                                               pos: 'X:35.1 Y:32.2', drops: ['青晶のデミアートマ', 'クレセントマギ イヤリング（ファイター/ソーサラー）'] },
+  { name: '呪いの商亀「コイントートス」',               auto: true,  prereq: '',                                                               pos: 'X:22.9 Y:10.5', drops: ['橙晶のデミアートマ', '探査記録 #8', 'クレセントマギ ネックレス（ファイター/ソーサラー）'] },
+  { name: '復元された獅子像「リペアドライオン」',       auto: true,  prereq: '',                                                               pos: 'X:38.8 Y:24.9', drops: ['紫晶のデミアートマ', 'クレセントマギ ネックレス（ファイター/ソーサラー）'] },
+  { name: '昏き篝火「ヒンキーパンク」',                 auto: true,  prereq: '',                                                               pos: 'X:10.1 Y:18.2', drops: ['緑晶のデミアートマ', 'クレセントマギ ブレスレット（ファイター/ソーサラー）'] },
+  { name: '神秘の偶像「ミシカルアイドル」',             auto: false, prereq: 'クレセント・ビブロス（KL13）を (X:7.0 Y:25.0) 付近で討伐',       pos: 'X:5.5 Y:26.4',  drops: ['緑晶のデミアートマ', '探査記録 #14', 'クレセントマギ ブレスレット（ファイター/ソーサラー）'] },
+  { name: '鳥嫌いの巨獣「ネオガルラ」',                 auto: false, prereq: 'クレセント・ガルラ（KL1）を (X:33.0 Y:7.0) 付近で討伐',           pos: 'X:30.5 Y:14.1', drops: ['黄晶のデミアートマ', 'クレセントマギ ネックレス（ファイター/ソーサラー）'] },
+  { name: '二足の獅子「ランパントライオン」',            auto: false, prereq: 'クレセント・ファン（KL5）を (X:36.0 Y:20.0) 付近で討伐',          pos: 'X:34.0 Y:20.0', drops: ['紫晶のデミアートマ', '予言士のソウルシャード', 'クレセントマギ ネックレス（ファイター/ソーサラー）'] },
+  { name: '脳髄愛好家「マインドフレイア」',             auto: false, prereq: 'クレセント・モンク（KL15）を (X:27.0 Y:34.0) 付近で討伐',         pos: 'X:27.4 Y:35.9', drops: ['青晶のデミアートマ', 'クレセントマギ イヤリング（ファイター/ソーサラー）'] },
+  { name: '伝説の鮫「ニーム・ペタロドゥス」',           auto: false, prereq: 'クレセント・ペタロドゥス（KL7）を (X:17.0 Y:9.0) 付近で討伐',     pos: 'X:19.1 Y:4.5',  drops: ['橙晶のデミアートマ', '探査記録 #10', 'クレセントマギ ブレスレット（ファイター/ソーサラー）'] },
+  { name: '黒の連隊',                                  auto: true,  prereq: '',                                                               pos: 'X:30.5 Y:28.6', drops: ['黄晶のデミアートマ', '狩人のソウルシャード', '探査記録 #16', 'クレセントマギ イヤリング（ファイター/ソーサラー）'] },
+  { name: '怒れる人造人間「クレセント・バーサーカー」', auto: true,  prereq: '',                                                               pos: 'X:33.9 Y:37.5', drops: ['青晶のデミアートマ', 'バーサーカーのソウルシャード', '探査記録 #17', 'クレセントマギ イヤリング（ファイター/ソーサラー）'] },
+  { name: '模造されしもの「水晶竜」',                   auto: true,  prereq: '',                                                               pos: 'X:13.0 Y:22.8', drops: ['緑晶のデミアートマ', 'クレセントマギ ブレスレット（ファイター/ソーサラー）'] },
+  { name: 'セキュリティ・コマンドー',                   auto: true,  prereq: '',                                                               pos: 'X:14.5 Y:9.2',  drops: ['橙晶のデミアートマ', 'クレセントマギ ブレスレット（ファイター/ソーサラー）'] },
+];
+
+---
+
+<BaseLayout
+  title="FATE・CE 攻略一覧 | クレセントアイル | FF14"
+  description="クレセントアイルの通常FATE11種・ポットFATE2種・CE15種を解説。発生条件・ギミック・蜃晶ドロップ・ソウルシャード入手先を網羅。"
+>
+  <div class="page-hero">
+    <div class="container mx-auto px-4 pt-16 pb-8 relative z-10">
+      <h1 class="font-display text-4xl md:text-5xl text-moon-light">FATE・CE 攻略一覧</h1>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-12 max-w-5xl">
+
+    <!-- マップ -->
+    <section class="mb-10">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">FATE・CE 出現位置マップ</h2>
+      <MapViewer
+        client:visible
+        markers={allMarkers}
+        zones={zones}
+        mapWidth={800}
+        mapHeight={800}
+        mapAlt="クレセントアイル FATE・CE 出現位置マップ"
+        mapSrc="/crescent-isle/maps/o6b1_01.png"
+        mapMaxHeight="640px"
+        showTimer={true}
+      />
+    </section>
+
+    <!-- CE一覧 -->
+    <div class="mb-10">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">クリティカルエンカウント（CE）一覧</h2>
+      <div class="section-card overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="min-w-[200px]">CE 名</th>
+              <th class="min-w-[200px]">発生条件</th>
+              <th class="min-w-[200px]">ドロップ品</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ceTable.map(ce => (
+              <tr>
+                <td class="text-moon-light font-medium">{ce.name}</td>
+                <td>
+                  {ce.auto ? (
+                    <span class="badge-slate">自動出現</span>
+                  ) : (
+                    <div>
+                      <span class="badge-red mb-1">前提討伐</span>
+                      <div class="text-xs text-slate mt-1">{ce.prereq}</div>
+                    </div>
+                  )}
+                </td>
+                <td>
+                  <ul class="space-y-1">
+                    {ce.drops.map(d => {
+                      const icon = dropIcon(d);
+                      return (
+                        <li class="flex items-center gap-1.5 text-xs text-slate">
+                          {icon
+                            ? <img src={icon} alt="" class="w-4 h-4 object-contain flex-shrink-0" />
+                            : <span class="w-4 h-4 flex-shrink-0 inline-block" />}
+                          {d}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ファントムジョブ解放 -->
+    <section class="mb-10">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+        ファントムジョブ解放（ソウルシャード）
+      </h2>
+      <div class="section-card">
+        <p class="text-slate text-sm leading-relaxed mb-4">
+          CE ドロップの<span class="text-gold font-medium">ソウルシャード</span>を使用することで
+          対応するファントムジョブが解放されます。
+        </p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ジョブ</th>
+              <th>ソウルシャード</th>
+              <th>入手 CE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {phantomJobs.map(j => (
+              <tr>
+                <td class="font-semibold">
+                  <span class="job-name-cell">
+                    <img src={crestIconUrl(j.id)} alt={j.name} class="job-crest-icon" style="filter:drop-shadow(0 0 3px rgba(212,175,55,0.5))" />
+                    <span class="text-moon">{j.name}</span>
+                  </span>
+                </td>
+                <td class="text-gold text-sm">{j.shard}</td>
+                <td class="text-teal text-xs">{j.ce}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="./support-jobs" class="text-xs text-teal/80 hover:text-teal transition-colors">サポートジョブ一覧を見る →</a>
+      </div>
+    </section>
+
+    <!-- デミアートマ入手先早見 -->
+    <section id="section-demiatma" class="mb-10">
+      <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">デミアートマ入手先早見</h2>
+      <div class="section-card">
+      <p class="text-xs text-slate mb-4">ファントムウェポンクエスト「蜃気楼に包まれし武具」進行中のみドロップ。各色3個（計18個）が必要。</p>
+      <div class="overflow-x-auto">
+        <table class="data-table table-fixed w-full">
+          <thead>
+            <tr>
+              <th class="w-44">デミアートマ</th>
+              <th class="w-1/2">通常FATE</th>
+              <th>CE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { name: '碧晶のデミアートマ', icon: '/icons/demiatma/verdigris.png',     fates: ['湿度の狩手「ディヒューミディファイア」', '土壌の守り手「マッドマッド」', 'カチカチのマジックポット'],  ces: ['封印大妖「クロイスターデーモン」'] },
+              { name: '青晶のデミアートマ', icon: '/icons/demiatma/azurite.png',       fates: ['監視の瞳「アイルオブザーバー」', '波起こしの海魔「ナンム」', '金色の怪石「ゴールデンブロックス」'],   ces: ['忍び寄る爪「デスクロー」', '脳髄愛好家「マインドフレイア」', '怒れる人造人間「クレセント・バーサーカー」'] },
+              { name: '緑晶のデミアートマ', icon: '/icons/demiatma/malachite.png',     fates: ['神罰の石獣「シジフォス」'],                                                                          ces: ['昏き篝火「ヒンキーパンク」', '神秘の偶像「ミシカルアイドル」', '模造されしもの「水晶竜」'] },
+              { name: '橙晶のデミアートマ', icon: '/icons/demiatma/realgar.png',       fates: ['進化せし怪蛇「アドバンスドエイビス」', '甲板の掃除人「巨大鳥」'],                                    ces: ['呪いの商亀「コイントートス」', '伝説の鮫「ニーム・ペタロドゥス」', 'セキュリティ・コマンドー'] },
+              { name: '紫晶のデミアートマ', icon: '/icons/demiatma/caput_mortuum.png', fates: ['命の収奪者「ライフギャザラー」'],                                                                    ces: ['石造りの守護騎士たち', '復元された獅子像「リペアドライオン」', '二足の獅子「ランパントライオン」'] },
+              { name: '黄晶のデミアートマ', icon: '/icons/demiatma/orpiment.png',      fates: ['悲鳴の蒐集者「ロプロス」', '美しき呪殺者「イグゼクレーター」', 'しあわせのマジックポット'],            ces: ['鳥嫌いの巨獣「ネオガルラ」', '黒の連隊'] },
+            ].map(row => (
+              <tr>
+                <td class="text-moon-light font-medium">
+                  <div class="flex items-center gap-1.5">
+                    <img src={row.icon} alt={row.name} class="w-6 h-6 object-contain flex-shrink-0" />
+                    <span class="text-xs">{row.name}</span>
+                  </div>
+                </td>
+                <td class="text-slate text-xs">
+                  <ul class="space-y-0.5">
+                    {row.fates.map(f => <li>・{f}</li>)}
+                  </ul>
+                </td>
+                <td class="text-slate text-xs">
+                  <ul class="space-y-0.5">
+                    {row.ces.map(c => <li>・{c}</li>)}
+                  </ul>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate mt-3">※ デミアートマは黄金のレガシーの各フィールドの FATE からも入手可。</p>
+      </div>
+    </section>
+
+  </div>
+</BaseLayout>
+
+<style>
+  .job-name-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .job-crest-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .border-teal { border-color: rgba(45,212,191,0.4) !important; }
+
+  .fate-pot-card {
+    background: rgba(10,20,37,0.6);
+    border: 1px solid rgba(45,212,191,0.15);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+  .pot-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .side-badge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 0.25rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  .side-north { background: rgba(96,165,250,0.15); color: #93c5fd; border: 1px solid #60a5fa44; }
+  .side-south { background: rgba(249,115,22,0.15);  color: #fdba74;  border: 1px solid #fb923c44; }
+
+  h4 {
+    color: #8aa8d0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin: 0.6rem 0 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  ul { padding-left: 1.2rem; margin: 0; }
+  li { color: #c8d8f0; font-size: 0.82rem; line-height: 1.65; }
+  li strong { color: #e2ecff; }
+  .tip { color: #fbbf24; font-weight: 700; }
+</style>
