@@ -4,44 +4,45 @@ import TableOfContents from '../../components/ui/TableOfContents.svelte';
 import { itemIconUrl, ITEM_ICONS } from '../../data/items';
 
 // ─── データ出典 ────────────────────────────────────────────────────────────────
-// ナレッジレベル・知見: https://luaazul.net/2025/05/31/ff14_7_25_crescentisl_levelup_demiatma_collection_points/
-// サポートEXP: https://game8.jp/ff14/692136
+// ナレッジレベル必要知見テーブル: https://browsegames.net/ff14/ff14蜃気楼の島クレセントアイル.html
+// サポートEXP獲得量: https://game8.jp/ff14/696131
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 const crestIconUrl = (id: string) => `${BASE}/icons/support-jobs/crests/${id}.png`;
+const QUEST_URL = 'https://jp.finalfantasyxiv.com/lodestone/playguide/db/quest/';
 
-// ナレッジレベル必要知見テーブル
-type KnowledgeRow = { lv: number; required: number | null; total: number | null; unlock?: string };
+// ナレッジレベル必要知見テーブル（出典: browsegames.net）
+type KnowledgeRow = { lv: number; required: number; total: number; unlock?: string };
 const knowledgeTable: KnowledgeRow[] = [
-  { lv:  2, required:   200, total:    200 },
-  { lv:  3, required:   400, total:    600 },
-  { lv:  4, required:   600, total:   1200 },
-  { lv:  5, required:   800, total:   2000, unlock: 'デスペナルティ発生' },
-  { lv:  6, required:  1200, total:   3200 },
-  { lv:  7, required:  1600, total:   4800 },
-  { lv:  8, required:  2000, total:   6800 },
-  { lv:  9, required:  2400, total:   9200 },
-  { lv: 10, required:  3000, total:  12200 },
-  { lv: 11, required:  3600, total:  15800 },
-  { lv: 12, required:  4400, total:  20200 },
-  { lv: 13, required:  5200, total:  25400 },
-  { lv: 14, required:  6000, total:  31400 },
-  { lv: 15, required:  7200, total:  38600 },
-  { lv: 16, required:  8400, total:  47000 },
-  { lv: 17, required: 10000, total:  57000 },
-  { lv: 18, required: 11600, total:  68600 },
-  { lv: 19, required: 13600, total:  82200 },
-  { lv: 20, required: 15600, total:  97800, unlock: 'メインクエスト「断絶した文明」解放' },
+  { lv:  2, required:     100, total:      100 },
+  { lv:  3, required:     600, total:      700 },
+  { lv:  4, required:   2800,  total:     3500 },
+  { lv:  5, required:   8000,  total:    11500, unlock: 'デスペナルティ発生' },
+  { lv:  6, required:  15500,  total:    27000 },
+  { lv:  7, required:  25000,  total:    52000 },
+  { lv:  8, required:  30800,  total:    82800 },
+  { lv:  9, required:  37000,  total:   119800 },
+  { lv: 10, required:  43740,  total:   163540 },
+  { lv: 11, required:  50940,  total:   214480 },
+  { lv: 12, required:  58640,  total:   273120 },
+  { lv: 13, required:  66750,  total:   339870 },
+  { lv: 14, required:  77500,  total:   417370 },
+  { lv: 15, required:  89000,  total:   506370 },
+  { lv: 16, required: 103160,  total:   609530 },
+  { lv: 17, required: 118200,  total:   727730 },
+  { lv: 18, required: 136200,  total:   863930 },
+  { lv: 19, required: 155400,  total:  1019330 },
+  { lv: 20, required: 177800,  total:  1197130, unlock: 'メインクエスト「断絶した文明」解放' },
 ];
 
-// 知見獲得源
-type KnowledgeSource = { name: string; amount: string; note: string; tag: string };
+// 知見獲得源（獲得量はコンテンツ・状況により変動するため参考情報のみ）
+type KnowledgeSource = { name: string; note: string; tag: string };
 const knowledgeSources: KnowledgeSource[] = [
-  { name: 'CE（クリティカルエンカウント）', amount: '約 500〜2,000', note: 'ランクに応じて変動。最も効率が高い',     tag: 'high' },
-  { name: 'FATE',                          amount: '約 150〜600',   note: 'ゴールド評価で最大量獲得',              tag: 'mid' },
-  { name: '攻略手帳',                       amount: '約 200〜800',   note: '初回クリア報酬。取りこぼしなく消化する', tag: 'mid' },
-  { name: 'フィールドモンスター討伐',        amount: '1 体につき 数十', note: '手軽に稼げるが効率は低め',             tag: 'low' },
-  { name: 'メインクエスト進行',             amount: '500〜1,000 程度', note: 'ストーリー進行ボーナス',               tag: 'low' },
+  { name: 'CE（クリティカルエンカウント）', note: '最も効率が高い。ナレッジ知見とサポートEXPを同時に稼げる', tag: 'high' },
+  { name: 'FATE',                          note: 'ゴールド評価で最大量獲得。CE待ち時間の合間に周回',        tag: 'mid' },
+  { name: '攻略手帳',                       note: '初回クリア報酬のみ。新エリアに踏み込む前に確認する',      tag: 'mid' },
+  { name: 'フィールドモンスター討伐',        note: 'チェーンボーナスで最大30連鎖まで増加',                   tag: 'low' },
+  { name: 'メインクエスト進行',             note: 'ストーリー進行ボーナス',                                  tag: 'low' },
 ];
 
 // サポートジョブ EXP 一覧（マスターまでの総計）
@@ -65,13 +66,13 @@ const supportJobs: SupportJobExp[] = [
   { id: 'gladiator',  name: '剣闘士',      masterExp: 14400,  acquire: '十二都市金貨 1,600 枚' },
 ];
 
-// サポート EXP 獲得源
+// サポート EXP 獲得源（出典: https://game8.jp/ff14/696131）
 type SupportSource = { name: string; amount: string; note: string; tag: string };
 const supportSources: SupportSource[] = [
-  { name: 'フィールドモンスター討伐', amount: '数十〜数百 / 体', note: '装備中のサポートジョブのみ獲得',               tag: 'mid' },
-  { name: 'FATE',                    amount: '数百〜数千 / 回',  note: 'ゴールド評価で最大量獲得',                    tag: 'mid' },
-  { name: 'CE',                      amount: '数千 / 回',        note: '周回のついでに稼ぎやすい',                    tag: 'high' },
-  { name: '吟遊詩人「あいのうた」',   amount: '+10%',             note: 'ナレッジクリスタルで使うとサポートEXP増加バフ付与（30分）。CEやFATEには効果なし', tag: 'tip' },
+  { name: 'フィールドモンスター討伐', amount: '—',                      note: '装備中のサポートジョブのみ獲得。量はモンスターによる',                      tag: 'mid' },
+  { name: 'FATE',                    amount: '金: 80 / 銀: 64 / 銅: 8', note: 'ゴールド評価で最大量獲得',                                              tag: 'mid' },
+  { name: 'CE',                      amount: '480 / 回',                note: '最も効率よく稼げる',                                                    tag: 'high' },
+  { name: '吟遊詩人「あいのうた」',   amount: '+10%',                    note: 'ナレッジクリスタルで使うとサポートEXP増加バフ付与（30分）。CEやFATEには効果なし', tag: 'tip' },
 ];
 
 const tocItems = [
@@ -114,7 +115,7 @@ const tocItems = [
             </p>
             <p class="text-slate text-sm leading-relaxed mb-4">
               ナレッジレベルはメインクエストの進行条件にもなっており、
-              クエスト「<span class="text-teal">断絶した文明</span>」の受注には <span class="text-gold font-semibold">Lv.20</span> が必要です。
+              クエスト「<a href={`${QUEST_URL}ffb2bfa8205/`} class="eorzeadb_link">断絶した文明</a>」の受注には <span class="text-gold font-semibold">Lv.20</span> が必要です。
               ストーリーを完走するにはナレッジ Lv.20 を目指す必要があります。
             </p>
 
@@ -150,7 +151,6 @@ const tocItems = [
               <thead>
                 <tr>
                   <th>獲得源</th>
-                  <th>獲得量（目安）</th>
                   <th>備考</th>
                 </tr>
               </thead>
@@ -165,7 +165,6 @@ const tocItems = [
                         <span class="text-moon">{s.name}</span>
                       </span>
                     </td>
-                    <td class="font-mono text-teal text-xs">{s.amount}</td>
                     <td class="text-slate text-xs">{s.note}</td>
                   </tr>
                 ))}
@@ -236,9 +235,9 @@ const tocItems = [
               を稼いでサポートジョブをレベルアップし続けることができます。
             </p>
             <p class="text-slate text-sm leading-relaxed mb-4">
-              サポートジョブのレベルは <span class="text-teal font-medium">Lv.1 〜 Lv.6</span> まであり、
+              サポートジョブのレベルは <span class="text-teal font-medium">Lv.1 〜 Lv.6</span>（ジョブにより異なる）まであり、
               レベルアップするごとに新しいアクションや特性が解放されます。
-              各ジョブをすべてマスター（Lv.6）すると、
+              各ジョブを最大レベルまで育てると、
               <span class="text-gold font-medium">すっぴん</span>のレベルが 1 上がる特殊仕様になっています。
             </p>
 
