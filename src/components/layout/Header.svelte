@@ -10,7 +10,7 @@
       sub: [{ href: '/crescent-isle/story/',  label: 'クレセントアイル', zone: 'south' }],
     },
     { href: '/crescent-isle/support-jobs/', label: 'サポートジョブ一覧' },
-    { href: '/crescent-isle/leveling/',    label: 'レベリング' },
+    { href: '/crescent-isle/leveling/',    label: 'レベリングのすすめ' },
     {
       label: '装備一覧',
       sub: [{ href: '/crescent-isle/gear/',   label: 'クレセントアイル', zone: 'south' }],
