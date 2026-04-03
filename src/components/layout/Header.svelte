@@ -20,7 +20,7 @@
       sub: [{ href: '/crescent-isle/chests/', label: 'クレセントアイル', zone: 'south' }],
     },
     {
-      label: 'FATE・CE 攻略一覧',
+      label: 'FATE・CE 一覧',
       sub: [{ href: '/crescent-isle/fate/',   label: 'クレセントアイル', zone: 'south' }],
     },
   ];
