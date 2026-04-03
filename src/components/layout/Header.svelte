@@ -10,7 +10,7 @@
       label: '装備一覧',
       sub: [{ href: '/crescent-isle/gear/',   label: 'クレセントアイル', zone: 'south' }],
     },
-    { href: '/crescent-isle/records/',      label: '探査記録帳' },
+    { href: '/crescent-isle/records/',      label: '探査記録一覧' },
     {
       label: 'ストーリー攻略',
       sub: [{ href: '/crescent-isle/story/',  label: 'クレセントアイル', zone: 'south' }],
