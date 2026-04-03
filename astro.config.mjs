@@ -1,9 +1,8 @@
 import { defineConfig } from 'astro/config';
 import svelte from '@astrojs/svelte';
 import tailwind from '@astrojs/tailwind';
+import sitemap from '@astrojs/sitemap';
 
-// GitHub Pages では リポジトリ名をベースパスに設定
-// 例: https://username.github.io/crescent-isle-guide/
 export default defineConfig({
   site: 'https://lastagous.com',
   base: '',
@@ -13,6 +12,7 @@ export default defineConfig({
     tailwind({
       applyBaseStyles: false,
     }),
+    sitemap(),
   ],
   build: {
     assets: '_assets',
