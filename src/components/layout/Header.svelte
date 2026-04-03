@@ -5,6 +5,10 @@
 
   // sub配列が1件 → 直リンク、2件以上 → ドロップダウン
   const navItems = [
+    {
+      label: 'ストーリー攻略',
+      sub: [{ href: '/crescent-isle/story/',  label: 'クレセントアイル', zone: 'south' }],
+    },
     { href: '/crescent-isle/support-jobs/', label: 'サポートジョブ一覧' },
     {
       label: '装備一覧',
@@ -12,16 +16,12 @@
     },
     { href: '/crescent-isle/records/',      label: '探査記録一覧' },
     {
-      label: 'ストーリー攻略',
-      sub: [{ href: '/crescent-isle/story/',  label: 'クレセントアイル', zone: 'south' }],
+      label: 'FATE・CE 一覧',
+      sub: [{ href: '/crescent-isle/fate/',   label: 'クレセントアイル', zone: 'south' }],
     },
     {
       label: '宝箱の配置',
       sub: [{ href: '/crescent-isle/chests/', label: 'クレセントアイル', zone: 'south' }],
-    },
-    {
-      label: 'FATE・CE 一覧',
-      sub: [{ href: '/crescent-isle/fate/',   label: 'クレセントアイル', zone: 'south' }],
     },
   ];
 
