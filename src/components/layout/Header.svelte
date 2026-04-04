@@ -16,6 +16,7 @@
       label: '装備一覧',
       sub: [{ href: '/crescent-isle/gear/',   label: 'クレセントアイル', zone: 'south' }],
     },
+    { href: '/crescent-isle/tower/',        label: 'フォークタワー' },
     { href: '/crescent-isle/records/',      label: '探査記録一覧' },
     {
       label: 'FATE・CE 一覧',
