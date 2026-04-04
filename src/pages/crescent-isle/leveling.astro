@@ -49,21 +49,21 @@ const knowledgeSources: KnowledgeSource[] = [
 type SupportJobExp = { id: string; name: string; masterExp: number; acquire: string };
 const supportJobs: SupportJobExp[] = [
   { id: 'freelancer', name: 'すっぴん',    masterExp: 237200, acquire: '他ジョブのマスター数でLvアップ（EXP不要）' },
-  { id: 'knight',     name: 'ナイト',      masterExp: 16800,  acquire: 'クエスト進行で自動入手' },
-  { id: 'monk',       name: 'モンク',      masterExp: 16800,  acquire: 'クエスト進行で自動入手' },
+  { id: 'chemist',    name: '薬師',        masterExp: 14000,  acquire: '十二都市銀貨 1,000 枚' },
   { id: 'bard',       name: '吟遊詩人',    masterExp: 14400,  acquire: 'クエスト進行で自動入手' },
   { id: 'berserker',  name: 'バーサーカー', masterExp: 14400,  acquire: 'CE「クレセント・バーサーカー」ドロップ' },
-  { id: 'ranger',     name: '狩人',        masterExp: 16800,  acquire: 'CE「黒の連隊」ドロップ' },
-  { id: 'oracle',     name: '予言士',      masterExp: 16800,  acquire: 'CE「二足の獅子ランパントライオン」ドロップ' },
-  { id: 'timemage',   name: '時魔道士',    masterExp: 16800,  acquire: '十二都市銀貨 1,000 枚' },
-  { id: 'chemist',    name: '薬師',        masterExp: 14000,  acquire: '十二都市銀貨 1,000 枚' },
   { id: 'cannoneer',  name: '砲撃士',      masterExp: 14400,  acquire: '十二都市銀貨 1,000 枚' },
   { id: 'mystknight', name: '魔法剣士',    masterExp: 14400,  acquire: '十二都市銀貨 1,000 枚' },
   { id: 'dancer',     name: '踊り子',      masterExp: 14400,  acquire: '十二都市銀貨 1,000 枚' },
   { id: 'geomancer',  name: '風水士',      masterExp: 14400,  acquire: '十二都市金貨 1,600 枚' },
+  { id: 'gladiator',  name: '剣闘士',      masterExp: 14400,  acquire: '十二都市金貨 1,600 枚' },
+  { id: 'knight',     name: 'ナイト',      masterExp: 16800,  acquire: 'クエスト進行で自動入手' },
+  { id: 'monk',       name: 'モンク',      masterExp: 16800,  acquire: 'クエスト進行で自動入手' },
+  { id: 'ranger',     name: '狩人',        masterExp: 16800,  acquire: 'CE「黒の連隊」ドロップ' },
+  { id: 'oracle',     name: '予言士',      masterExp: 16800,  acquire: 'CE「二足の獅子ランパントライオン」ドロップ' },
+  { id: 'timemage',   name: '時魔道士',    masterExp: 16800,  acquire: '十二都市銀貨 1,000 枚' },
   { id: 'samurai',    name: '侍',          masterExp: 19200,  acquire: '十二都市金貨 1,600 枚' },
   { id: 'thief',      name: 'シーフ',      masterExp: 19200,  acquire: '十二都市金貨 1,600 枚' },
-  { id: 'gladiator',  name: '剣闘士',      masterExp: 14400,  acquire: '十二都市金貨 1,600 枚' },
 ];
 
 // サポート EXP 獲得源（出典: https://game8.jp/ff14/696131）
