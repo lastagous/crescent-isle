@@ -1,0 +1,402 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import TableOfContents from '../../components/ui/TableOfContents.svelte';
+import { itemIconUrl, ITEM_ICONS } from '../../data/items';
+
+// ─── データ出典 ────────────────────────────────────────────────────────────────
+// ナレッジレベル必要知見テーブル: https://browsegames.net/ff14/ff14蜃気楼の島クレセントアイル.html
+// サポートEXP獲得量: https://game8.jp/ff14/696131
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+const crestIconUrl = (id: string) => `${BASE}/icons/support-jobs/crests/${id}.png`;
+const QUEST_URL = 'https://jp.finalfantasyxiv.com/lodestone/playguide/db/quest/';
+
+// ナレッジレベル必要知見テーブル（出典: browsegames.net）
+type KnowledgeRow = { lv: number; required: number; total: number; unlock?: string };
+const knowledgeTable: KnowledgeRow[] = [
+  { lv:  2, required:     100, total:      100 },
+  { lv:  3, required:     600, total:      700 },
+  { lv:  4, required:   2800,  total:     3500 },
+  { lv:  5, required:   8000,  total:    11500, unlock: 'デスペナルティ発生' },
+  { lv:  6, required:  15500,  total:    27000 },
+  { lv:  7, required:  25000,  total:    52000 },
+  { lv:  8, required:  30800,  total:    82800 },
+  { lv:  9, required:  37000,  total:   119800 },
+  { lv: 10, required:  43740,  total:   163540 },
+  { lv: 11, required:  50940,  total:   214480 },
+  { lv: 12, required:  58640,  total:   273120 },
+  { lv: 13, required:  66750,  total:   339870 },
+  { lv: 14, required:  77500,  total:   417370 },
+  { lv: 15, required:  89000,  total:   506370 },
+  { lv: 16, required: 103160,  total:   609530 },
+  { lv: 17, required: 118200,  total:   727730 },
+  { lv: 18, required: 136200,  total:   863930 },
+  { lv: 19, required: 155400,  total:  1019330 },
+  { lv: 20, required: 177800,  total:  1197130, unlock: 'メインクエスト「断絶した文明」解放' },
+];
+
+// 知見獲得源（獲得量はコンテンツ・状況により変動するため参考情報のみ）
+type KnowledgeSource = { name: string; note: string; tag: string };
+const knowledgeSources: KnowledgeSource[] = [
+  { name: 'CE（クリティカルエンカウント）', note: '最も効率が高い。ナレッジ知見とサポートEXPを同時に稼げる', tag: 'high' },
+  { name: 'FATE',                          note: 'ゴールド評価で最大量獲得。CE待ち時間の合間に周回',        tag: 'mid' },
+  { name: '攻略手帳',                       note: '初回クリア報酬のみ。新エリアに踏み込む前に確認する',      tag: 'mid' },
+  { name: 'フィールドモンスター討伐',        note: 'チェーンボーナスで最大30連鎖まで増加',                   tag: 'low' },
+  { name: 'メインクエスト進行',             note: 'ストーリー進行ボーナス',                                  tag: 'low' },
+];
+
+// サポートジョブ EXP 一覧（マスターまでの総計）
+type SupportJobExp = { id: string; name: string; masterExp: number; acquire: string };
+const supportJobs: SupportJobExp[] = [
+  { id: 'freelancer', name: 'すっぴん',    masterExp: 237200, acquire: '他ジョブのマスター数でLvアップ（EXP不要）' },
+  { id: 'chemist',    name: '薬師',        masterExp: 14000,  acquire: '十二都市銀貨 1,000 枚' },
+  { id: 'bard',       name: '吟遊詩人',    masterExp: 14400,  acquire: 'クエスト進行で自動入手' },
+  { id: 'berserker',  name: 'バーサーカー', masterExp: 14400,  acquire: 'CE「クレセント・バーサーカー」ドロップ' },
+  { id: 'cannoneer',  name: '砲撃士',      masterExp: 14400,  acquire: '十二都市銀貨 1,000 枚' },
+  { id: 'mystknight', name: '魔法剣士',    masterExp: 14400,  acquire: '十二都市銀貨 1,000 枚' },
+  { id: 'dancer',     name: '踊り子',      masterExp: 14400,  acquire: '十二都市銀貨 1,000 枚' },
+  { id: 'geomancer',  name: '風水士',      masterExp: 14400,  acquire: '十二都市金貨 1,600 枚' },
+  { id: 'gladiator',  name: '剣闘士',      masterExp: 14400,  acquire: '十二都市金貨 1,600 枚' },
+  { id: 'knight',     name: 'ナイト',      masterExp: 16800,  acquire: 'クエスト進行で自動入手' },
+  { id: 'monk',       name: 'モンク',      masterExp: 16800,  acquire: 'クエスト進行で自動入手' },
+  { id: 'ranger',     name: '狩人',        masterExp: 16800,  acquire: 'CE「黒の連隊」ドロップ' },
+  { id: 'oracle',     name: '予言士',      masterExp: 16800,  acquire: 'CE「二足の獅子ランパントライオン」ドロップ' },
+  { id: 'timemage',   name: '時魔道士',    masterExp: 16800,  acquire: '十二都市銀貨 1,000 枚' },
+  { id: 'samurai',    name: '侍',          masterExp: 19200,  acquire: '十二都市金貨 1,600 枚' },
+  { id: 'thief',      name: 'シーフ',      masterExp: 19200,  acquire: '十二都市金貨 1,600 枚' },
+];
+
+// サポート EXP 獲得源（出典: https://game8.jp/ff14/696131）
+type SupportSource = { name: string; amount: string; note: string; tag: string };
+const supportSources: SupportSource[] = [
+  { name: 'フィールドモンスター討伐', amount: '—',                      note: '装備中のサポートジョブのみ獲得。量はモンスターによる',                      tag: 'mid' },
+  { name: 'FATE',                    amount: '金: 80 / 銀: 64 / 銅: 8', note: 'ゴールド評価で最大量獲得',                                              tag: 'mid' },
+  { name: 'CE',                      amount: '480 / 回',                note: '最も効率よく稼げる',                                                    tag: 'high' },
+  { name: '吟遊詩人「あいのうた」',   amount: '+10%',                    note: 'ナレッジクリスタルで使うとサポートEXP増加バフ付与（30分）。CEやFATEには効果なし', tag: 'tip' },
+];
+
+const tocItems = [
+  { id: 'sec-knowledge-overview', label: 'ナレッジレベルとは' },
+  { id: 'sec-knowledge-sources',  label: '知見の獲得方法' },
+  { id: 'sec-knowledge-table',    label: '必要知見テーブル' },
+  { id: 'sec-support-overview',   label: 'サポートジョブのレベリング' },
+  { id: 'sec-support-sources',    label: 'サポートEXP獲得方法' },
+  { id: 'sec-support-table',      label: 'マスター必要EXP一覧' },
+  { id: 'sec-tips',               label: '効率UPのコツ' },
+];
+---
+
+<BaseLayout
+  title="レベリングのすすめ | クレセントアイル | FF14"
+  description="FF14 クレセントアイル（パッチ 7.25）のレベリングガイド。ナレッジレベル 20 までの知見稼ぎと、その後のサポートジョブレベリングを解説。"
+>
+  <!-- Hero -->
+  <div class="page-hero">
+    <div class="container mx-auto px-4 pt-16 pb-8 relative z-10">
+      <h1 class="font-display text-4xl md:text-5xl text-moon-light">レベリングのすすめ</h1>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-12 max-w-6xl">
+    <div class="flex gap-8 items-stretch">
+      <div class="flex-1 min-w-0">
+
+        <!-- ━━━ ナレッジレベルとは ━━━ -->
+        <section id="sec-knowledge-overview" class="mb-12">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+            ナレッジレベルとは
+          </h2>
+
+          <div class="section-card mb-4">
+            <p class="text-slate text-sm leading-relaxed mb-4">
+              クレセントアイル専用の成長指標です。
+              「<span class="text-teal font-medium"><img src={itemIconUrl(65117)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />知見</span>」という専用経験値を積んでレベルアップします。
+              上限は <span class="text-gold font-semibold">Lv.20</span>（パッチ 7.25 時点）。
+            </p>
+            <p class="text-slate text-sm leading-relaxed mb-4">
+              ナレッジレベルはメインクエストの進行条件にもなっており、
+              クエスト「<a href={`${QUEST_URL}ffb2bfa8205/`} class="eorzeadb_link">断絶した文明</a>」の受注には <span class="text-gold font-semibold">Lv.20</span> が必要です。
+              ストーリーを完走するにはナレッジ Lv.20 を目指す必要があります。
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div class="bg-crimson/5 border border-crimson/20 rounded-lg p-3">
+                <div class="text-crimson text-xs uppercase tracking-wider mb-1.5">デスペナルティ（Lv.5 以上）</div>
+                <ul class="text-slate text-xs space-y-1 leading-relaxed">
+                  <li>・死亡後に蘇生を受けずに離脱すると知見が減少</li>
+                  <li>・知見が 0 を下回るとナレッジレベルが 1 下がる</li>
+                  <li>・<span class="text-moon">Lv.4 以下はデスペナなし</span>。序盤はエーテライト解放を積極的に</li>
+                </ul>
+              </div>
+              <div class="bg-teal/5 border border-teal/20 rounded-lg p-3">
+                <div class="text-teal text-xs uppercase tracking-wider mb-1.5">序盤の優先事項</div>
+                <ul class="text-slate text-xs space-y-1 leading-relaxed">
+                  <li>・Lv.5 に達する前に島内エーテライトを全解放</li>
+                  <li>・攻略手帳のタスクを意識しながら周回</li>
+                  <li>・CE・FATE のポップを見逃さない</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ━━━ 知見の獲得方法 ━━━ -->
+        <section id="sec-knowledge-sources" class="mb-12">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+            知見の獲得方法
+          </h2>
+
+          <div class="section-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>獲得源</th>
+                  <th>備考</th>
+                </tr>
+              </thead>
+              <tbody>
+                {knowledgeSources.map(s => (
+                  <tr>
+                    <td class="font-medium">
+                      <span class={`inline-flex items-center gap-1.5`}>
+                        {s.tag === 'high' && <span class="w-1.5 h-1.5 rounded-full bg-teal flex-shrink-0"></span>}
+                        {s.tag === 'mid'  && <span class="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0"></span>}
+                        {s.tag === 'low'  && <span class="w-1.5 h-1.5 rounded-full bg-slate/50 flex-shrink-0"></span>}
+                        <span class="text-moon">{s.name}</span>
+                      </span>
+                    </td>
+                    <td class="text-slate text-xs">{s.note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div class="mt-3 flex items-center gap-3 text-xs text-slate">
+              <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-teal"></span>高効率</span>
+              <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-gold"></span>中効率</span>
+              <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate/50"></span>低効率</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ━━━ 必要知見テーブル ━━━ -->
+        <section id="sec-knowledge-table" class="mb-12">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+            必要知見テーブル（Lv.1 → 20）
+          </h2>
+
+          <div class="section-card">
+            <p class="text-slate text-xs leading-relaxed mb-4">
+              ※ 数値は参考値です。パッチにより変動する場合があります。
+            </p>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Lv</th>
+                  <th>次Lvまで必要知見</th>
+                  <th>累計知見</th>
+                  <th>備考</th>
+                </tr>
+              </thead>
+              <tbody>
+                {knowledgeTable.map(row => (
+                  <tr class={row.unlock ? 'bg-teal/5' : ''}>
+                    <td class="font-mono font-bold text-teal">{row.lv}</td>
+                    <td class="font-mono text-moon text-right">
+                      {row.required !== null ? row.required.toLocaleString() : '—'}
+                    </td>
+                    <td class="font-mono text-slate text-right">
+                      {row.total !== null ? row.total.toLocaleString() : '—'}
+                    </td>
+                    <td class="text-xs">
+                      {row.unlock && (
+                        <span class="inline-flex items-center gap-1 text-gold">
+                          <span class="material-icons" style="font-size:12px">lock_open</span>
+                          {row.unlock}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ━━━ サポートジョブのレベリング ━━━ -->
+        <section id="sec-support-overview" class="mb-12">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+            サポートジョブのレベリング（ナレッジ Lv.20 以降）
+          </h2>
+
+          <div class="section-card mb-4">
+            <p class="text-slate text-sm leading-relaxed mb-4">
+              ナレッジレベルが上限の <span class="text-gold font-semibold">Lv.20</span> に達した後も、
+              <span class="text-teal font-medium"><img src={itemIconUrl(65120)} alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated" />サポート経験値</span>
+              を稼いでサポートジョブをレベルアップし続けることができます。
+            </p>
+            <p class="text-slate text-sm leading-relaxed mb-4">
+              サポートジョブのレベルは <span class="text-teal font-medium">Lv.1 〜 Lv.6</span>（ジョブにより異なる）まであり、
+              レベルアップするごとに新しいアクションや特性が解放されます。
+              各ジョブを最大レベルまで育てると、
+              <span class="text-gold font-medium">すっぴん</span>のレベルが 1 上がる特殊仕様になっています。
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div class="bg-teal/5 border border-teal/20 rounded-lg p-3">
+                <div class="text-teal text-xs uppercase tracking-wider mb-1.5">優先してマスターしたいジョブ</div>
+                <ul class="text-slate text-xs space-y-1 leading-relaxed">
+                  <li>・<span class="text-moon font-medium">ナイト</span>：高い被ダメ軽減で生存率が上がる</li>
+                  <li>・<span class="text-moon font-medium">薬師</span>：マギ・ポーションで自己回復・蘇生が可能</li>
+                  <li>・<span class="text-moon font-medium">吟遊詩人</span>：パーティ強化に汎用性が高い</li>
+                </ul>
+              </div>
+              <div class="bg-gold/5 border border-gold/20 rounded-lg p-3">
+                <div class="text-gold text-xs uppercase tracking-wider mb-1.5">すっぴんのレベルアップ条件</div>
+                <ul class="text-slate text-xs space-y-1 leading-relaxed">
+                  <li>・他のサポートジョブをマスターするたびに Lv +1</li>
+                  <li>・すっぴん自身に EXP を入れる必要はない</li>
+                  <li>・最大レベルは全ジョブマスター数に依存</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ━━━ サポートEXP獲得方法 ━━━ -->
+        <section id="sec-support-sources" class="mb-12">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+            サポートEXP 獲得方法
+          </h2>
+
+          <div class="section-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>獲得源</th>
+                  <th>獲得量</th>
+                  <th>備考</th>
+                </tr>
+              </thead>
+              <tbody>
+                {supportSources.map(s => (
+                  <tr class={s.tag === 'tip' ? 'bg-gold/5' : ''}>
+                    <td class="font-medium">
+                      <span class="inline-flex items-center gap-1.5">
+                        {s.tag === 'high' && <span class="w-1.5 h-1.5 rounded-full bg-teal flex-shrink-0"></span>}
+                        {s.tag === 'mid'  && <span class="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0"></span>}
+                        {s.tag === 'tip'  && <span class="material-icons text-gold flex-shrink-0" style="font-size:14px">tips_and_updates</span>}
+                        <span class="text-moon">{s.name}</span>
+                      </span>
+                    </td>
+                    <td class="font-mono text-teal text-xs">{s.amount}</td>
+                    <td class="text-slate text-xs">{s.note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ━━━ マスター必要EXP一覧 ━━━ -->
+        <section id="sec-support-table" class="mb-12">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+            マスター必要EXP 一覧
+          </h2>
+
+          <div class="section-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ジョブ</th>
+                  <th>マスターまでの総EXP</th>
+                  <th>入手方法</th>
+                </tr>
+              </thead>
+              <tbody>
+                {supportJobs.map(j => (
+                  <tr>
+                    <td>
+                      <span class="inline-flex items-center gap-2">
+                        <img src={crestIconUrl(j.id)} alt={j.name} class="w-5 h-5 object-contain flex-shrink-0" />
+                        <span class="text-moon font-medium">{j.name}</span>
+                      </span>
+                    </td>
+                    <td class="font-mono text-teal text-right">
+                      {j.id === 'freelancer'
+                        ? <span class="text-gold text-xs">他ジョブマスターで自動UP</span>
+                        : j.masterExp.toLocaleString()
+                      }
+                    </td>
+                    <td class="text-slate text-xs">{j.acquire}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ━━━ 効率UPのコツ ━━━ -->
+        <section id="sec-tips" class="mb-12">
+          <h2 class="font-display text-sm text-moon-dim uppercase tracking-widest mb-5 border-b border-night-300/60 pb-2">
+            効率UPのコツ
+          </h2>
+
+          <div class="flex flex-col gap-4">
+            <div class="section-card flex items-start gap-3">
+              <span class="material-icons text-teal flex-shrink-0" style="font-size:1.25rem;margin-top:0.125rem">star</span>
+              <div>
+                <div class="text-moon font-medium text-sm mb-1">CE を最優先で参加する</div>
+                <p class="text-slate text-xs leading-relaxed">
+                  CE はナレッジ知見・サポートEXP・十二都市金貨・銀貨をまとめて稼げる最効率コンテンツです。
+                  マップ内を巡回しつつ CE のポップを常に確認する習慣をつけましょう。
+                </p>
+              </div>
+            </div>
+
+            <div class="section-card flex items-start gap-3">
+              <span class="material-icons text-teal flex-shrink-0" style="font-size:1.25rem;margin-top:0.125rem">menu_book</span>
+              <div>
+                <div class="text-moon font-medium text-sm mb-1">攻略手帳を消化する</div>
+                <p class="text-slate text-xs leading-relaxed">
+                  攻略手帳は初回クリアのみ知見ボーナスが入ります。
+                  新エリアに踏み込む際は手帳を開いてタスクを確認し、取りこぼしのないように進めましょう。
+                </p>
+              </div>
+            </div>
+
+            <div class="section-card flex items-start gap-3">
+              <span class="material-icons text-gold flex-shrink-0" style="font-size:1.25rem;margin-top:0.125rem">music_note</span>
+              <div>
+                <div class="text-moon font-medium text-sm mb-1">吟遊詩人「あいのうた」でサポートEXP+10%</div>
+                <p class="text-slate text-xs leading-relaxed">
+                  サポート吟遊詩人 Lv.2 以上で「あいのうた」が解放されます。
+                  <span class="text-teal">ナレッジクリスタル</span>の周囲で使うと
+                  <span class="text-gold font-medium">サポートEXP +10%（30分）</span>のバフが付与されます。
+                  モンスター討伐でサポートEXPを稼ぐ際は事前にかけておきましょう。
+                  ※ CE・FATE には効果がありません。
+                </p>
+              </div>
+            </div>
+
+            <div class="section-card flex items-start gap-3">
+              <span class="material-icons text-crimson flex-shrink-0" style="font-size:1.25rem;margin-top:0.125rem">warning</span>
+              <div>
+                <div class="text-moon font-medium text-sm mb-1">デスペナを避ける（Lv.5 以上）</div>
+                <p class="text-slate text-xs leading-relaxed">
+                  ナレッジ Lv.5 以上になると、死亡から蘇生なしで離脱すると知見が減少します。
+                  知見が 0 を下回るとレベルダウンするため、無理な突撃は避けましょう。
+                  Lv.4 以下はデスペナがないので、序盤にエーテライトを全解放してしまうのがおすすめです。
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /flex-1 -->
+
+      <aside class="hidden xl:block w-52 flex-shrink-0">
+        <TableOfContents client:visible items={tocItems} />
+      </aside>
+    </div><!-- /flex -->
+  </div>
+</BaseLayout>

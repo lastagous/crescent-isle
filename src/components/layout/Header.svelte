@@ -4,9 +4,11 @@
   let mobileOpen = false;
 
   // sub配列が1件 → 直リンク、2件以上 → ドロップダウン
+  // separatorAfter: true → その項目の後にセパレーターを挿入
   const navItems = [
+    { href: '/crescent-isle/leveling/', label: 'レベリングのすすめ', separatorAfter: true },
     {
-      label: 'ストーリー攻略',
+      label: 'ストーリー一覧',
       sub: [{ href: '/crescent-isle/story/',  label: 'クレセントアイル', zone: 'south' }],
     },
     { href: '/crescent-isle/support-jobs/', label: 'サポートジョブ一覧' },
@@ -54,6 +56,9 @@
           >
             <span>{item.label}</span>
           </a>
+          {#if item.separatorAfter}
+            <span class="nav-sep" aria-hidden="true"></span>
+          {/if}
 
         {:else if item.sub.length === 1}
           <!-- 現在は単一エリア → 直リンク（構造はドロップ対応済み） -->
@@ -158,6 +163,16 @@
     backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(45, 212, 191, 0.1);
     box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  /* ─── セパレーター ─── */
+  .nav-sep {
+    display: inline-block;
+    width: 1px;
+    height: 1rem;
+    background: rgba(45, 212, 191, 0.25);
+    margin: 0 0.375rem;
+    flex-shrink: 0;
   }
 
   /* ─── デスクトップ nav ─── */
