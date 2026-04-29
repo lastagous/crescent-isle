@@ -1,6 +1,6 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import TableOfContents from '../../components/ui/TableOfContents.svelte';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import TableOfContents from '../components/ui/TableOfContents.svelte';
 
 // ─── データ出典 ────────────────────────────────────────────────────────────────
 // EXP・アクション効果: https://game8.jp/ff14/692136 および各ジョブ個別ページ
@@ -23,7 +23,7 @@ import TableOfContents from '../../components/ui/TableOfContents.svelte';
 //   全アクション一覧 https://game8.jp/ff14/692184
 // アイコン出典: FF14ゲームデータ (SaintCoinach + MKDSupportJob)
 
-import { itemIconUrl } from '../../data/items';
+import { itemIconUrl } from '../data/items';
 
 const _img = (id: number) => `<img src="${itemIconUrl(id)}" alt="" class="inline align-middle w-4 h-4 rounded mr-0.5" style="image-rendering:pixelated">`;
 const withIcons = (text: string) => text

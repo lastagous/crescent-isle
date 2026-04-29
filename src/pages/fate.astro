@@ -1,7 +1,7 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import MapViewer from '../../components/ui/MapViewer.svelte';
-import { itemIconUrl } from '../../data/items';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MapViewer from '../components/ui/MapViewer.svelte';
+import { itemIconUrl } from '../data/items';
 
 // ゲーム座標 → SVGピクセル変換（Map SizeFactor=100, OffsetX=0, OffsetY=0 → 範囲 1〜42）
 const g2p = (gx: number, gy: number) => ({

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://lastagous.com/sitemap-index.xml
+Sitemap: https://lastagous.com/crescent-isle/sitemap-index.xml
