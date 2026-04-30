@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<BaseLayout
+  title="404 - ページが見つかりません | クレセントアイル | FF14"
+  description="お探しのページは存在しないか、移動した可能性があります。"
+>
+  <div class="page-hero">
+    <div class="container mx-auto px-4 pt-16 pb-8 relative z-10 text-center">
+      <p class="font-mono text-teal text-sm tracking-widest uppercase mb-4">Error 404</p>
+      <h1 class="font-display text-5xl md:text-7xl text-moon-light mb-4">迷子の冒険者</h1>
+      <p class="text-moon-dim text-lg">お探しのページは蜃気楼の彼方へ消えてしまったようです。</p>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-16 max-w-lg text-center">
+    <div class="section-card mb-8">
+      <p class="text-moon mb-6">以下のページから目的の情報を探してみてください。</p>
+      <nav class="flex flex-col gap-3">
+        <a href={`${base}/support-jobs/`} class="btn-ghost justify-center">サポートジョブ一覧</a>
+        <a href={`${base}/story/`}        class="btn-ghost justify-center">ストーリー一覧</a>
+        <a href={`${base}/gear/`}         class="btn-ghost justify-center">装備一覧</a>
+        <a href={`${base}/records/`}      class="btn-ghost justify-center">探査記録一覧</a>
+        <a href={`${base}/chests/`}       class="btn-ghost justify-center">宝箱の配置</a>
+        <a href={`${base}/fate/`}         class="btn-ghost justify-center">FATE・CE 一覧</a>
+        <a href={`${base}/tower/`}        class="btn-ghost justify-center">フォークタワー：力の塔</a>
+      </nav>
+    </div>
+  </div>
+</BaseLayout>
