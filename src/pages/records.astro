@@ -111,7 +111,7 @@ const howMeta: Record<HowType, { label: string; badge: string; badgeClass: strin
   ce: {
     label:      'クリティカルエンカウント',
     badge:      'CE',
-    badgeClass: 'badge-crimson',
+    badgeClass: 'badge-red',
     desc:       '対応するCEクリア時に低確率でドロップ。周回が必要になる場合があります。',
   },
   fate: {
@@ -331,9 +331,7 @@ const tocItems = [
 </BaseLayout>
 
 <style>
-  .badge-moon {
-    @apply inline-flex items-center rounded px-1.5 py-0.5 font-semibold text-moon-light bg-moon/10 border border-moon/25;
-  }
+  /* .badge-moon / .btn-outline は global.css に集約 */
   .record-card {
     @apply flex gap-3 items-start p-3 border border-night-300/40 hover:border-teal/20 transition-colors;
   }
@@ -360,8 +358,5 @@ const tocItems = [
   }
   .record-note {
     @apply text-gold/70 text-xs mt-1;
-  }
-  .btn-outline {
-    @apply inline-flex items-center rounded border border-night-300/60 text-slate hover:border-teal/40 hover:text-teal transition-colors;
   }
 </style>

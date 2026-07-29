@@ -34,7 +34,7 @@
 | `SpoilerToggle.svelte` | ストーリーのネタバレ ON/OFF トグル |
 | `MapViewer.svelte` | 宝箱・ポット・にんじん位置の SVG マップ |
 | `Accordion.svelte` | FATE/CE ギミック解説アコーディオン |
-| `TowerNavigator.svelte` | 力の塔の階層ナビゲーター |
+| `TocObserver.svelte` | 力の塔ページの目次スクロール連動 |
 
 ## セットアップ
 

@@ -55,6 +55,14 @@
   .badge-gold   { @apply badge bg-gold/10 text-gold border-gold/30; }
   .badge-red    { @apply badge bg-crimson/10 text-crimson border-crimson/30; }
   .badge-slate  { @apply badge bg-slate/10 text-slate-light border-slate/30; }
+  .badge-moon   { @apply badge bg-moon/10 text-moon-light border-moon/25; }
+
+  /* 力の塔（tower.astro）向けの意味づけバッジ。レイアウトは併用する .ts-badge 側が持つため
+     .badge は継承せず配色のみを定義する */
+  .badge-boss  { @apply bg-crimson/[0.18] text-red-300 border border-crimson/40; }
+  .badge-trash { @apply bg-amber-500/15 text-amber-300 border border-amber-500/35; }
+  .badge-prep  { @apply bg-indigo-500/15 text-indigo-300 border border-indigo-500/35; }
+  .badge-final { @apply bg-red-600/20 text-red-300 border border-red-600/50; }
 
   .btn {
     @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium
@@ -69,6 +77,11 @@
   .btn-ghost {
     @apply btn border border-[var(--color-border)] text-moon
            hover:bg-night-200 hover:border-teal/40;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center rounded border border-night-300/60 text-slate
+           hover:border-teal/40 hover:text-teal transition-colors;
   }
 
   .divider {
@@ -95,4 +108,12 @@
     @apply py-3 px-4 border-b border-night-300/50;
   }
   .data-table tr:hover td { @apply bg-night-300/30; }
+
+  /* ジョブ紋章アイコン付きセル（fate.astro / story.astro 共通） */
+  .job-name-cell {
+    @apply inline-flex items-center gap-[0.45rem];
+  }
+  .job-crest-icon {
+    @apply w-5 h-5 object-contain flex-shrink-0;
+  }
 }
